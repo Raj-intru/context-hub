@@ -70,6 +70,20 @@ OPENROUTER_API_KEY=... OPENAI_API_KEY=... \
 npm start
 ```
 
+## See it running (demo mode)
+
+`npm run demo` starts the **real** app against your Postgres but stubs the AI
+provider + moderation, so you can click through signup → chat → dashboard
+without any API keys:
+
+```bash
+DATABASE_URL=postgres://lyra_app:apppw@127.0.0.1:5432/lyra npm run demo
+# then open http://localhost:5050
+```
+
+`npm run demo:shots` (needs the dev dependency `playwright-core` and a Chromium)
+drives that demo and captures screenshots of every screen.
+
 ## Tests
 
 ```bash

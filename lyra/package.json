@@ -13,12 +13,17 @@
     "dev": "node --watch src/server.js",
     "test": "node --test test/*.test.js",
     "test:e2e": "node test/e2e.mjs",
-    "migrate": "node scripts/migrate.js"
+    "migrate": "node scripts/migrate.js",
+    "demo": "node scripts/demo-server.mjs",
+    "demo:shots": "node scripts/demo-shots.mjs"
   },
   "dependencies": {
     "express": "^4.19.2",
+    "node-cron": "^3.0.3",
     "pg": "^8.12.0",
-    "stripe": "^16.8.0",
-    "node-cron": "^3.0.3"
+    "stripe": "^16.8.0"
+  },
+  "devDependencies": {
+    "playwright-core": "^1.63.0"
   }
 }

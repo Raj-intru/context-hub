@@ -10,6 +10,9 @@
   }
 }
 * { box-sizing: border-box; }
+/* Ensure the HTML `hidden` attribute always wins over display:flex/grid rules
+   used for toggled elements (nav, auth forms, views). */
+[hidden] { display: none !important; }
 body { margin: 0; background: var(--bg); color: var(--ink);
   font: 15px/1.5 system-ui, -apple-system, Segoe UI, Roboto, sans-serif; }
 button { font: inherit; cursor: pointer; }
