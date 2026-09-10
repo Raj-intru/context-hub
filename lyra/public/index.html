@@ -1,0 +1,117 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Lyra — Safe AI for families & schools</title>
+  <link rel="stylesheet" href="/styles.css" />
+</head>
+<body>
+  <header class="topbar">
+    <div class="brand">✨ Lyra</div>
+    <nav id="nav" class="nav" hidden>
+      <button data-view="chat" class="navbtn">Chat</button>
+      <button data-view="badges" class="navbtn">Badges</button>
+      <button data-view="dashboard" class="navbtn admin-only" hidden>Dashboard</button>
+      <span id="whoami" class="whoami"></span>
+      <button id="logout" class="navbtn ghost">Sign out</button>
+    </nav>
+  </header>
+
+  <main id="app">
+    <!-- Auth view -->
+    <section id="view-auth" class="view card auth">
+      <h1 class="hero">A safe, multi-model AI workspace<br />for families and schools.</h1>
+      <p class="sub">Socratic tutoring for kids, private conversations, pooled credits, and admin dashboards that show usage — never your child's chats.</p>
+
+      <div class="tabs">
+        <button class="tab active" data-tab="login">Sign in</button>
+        <button class="tab" data-tab="signup">Create workspace</button>
+        <button class="tab" data-tab="invite">Have an invite?</button>
+      </div>
+
+      <form id="form-login" class="authform">
+        <label>Email<input type="email" name="email" required autocomplete="username" /></label>
+        <label>Password<input type="password" name="password" required autocomplete="current-password" /></label>
+        <button class="primary" type="submit">Sign in</button>
+      </form>
+
+      <form id="form-signup" class="authform" hidden>
+        <div class="segmented">
+          <label class="seg"><input type="radio" name="tenantType" value="family" checked /> 👪 Family</label>
+          <label class="seg"><input type="radio" name="tenantType" value="school" /> 🏫 School</label>
+        </div>
+        <label>Workspace name<input name="tenantName" placeholder="The Smith Household / Oakridge High" required /></label>
+        <label>Your first name<input name="firstName" placeholder="Alex" /></label>
+        <label>Email<input type="email" name="email" required autocomplete="username" /></label>
+        <label>Password (min 8 chars)<input type="password" name="password" required minlength="8" autocomplete="new-password" /></label>
+        <button class="primary" type="submit">Create workspace</button>
+      </form>
+
+      <form id="form-invite" class="authform" hidden>
+        <label>Invite token<input name="token" placeholder="Paste the token from your invite link" required /></label>
+        <label>Your first name<input name="firstName" placeholder="Sam" /></label>
+        <label>Choose a password (min 8)<input type="password" name="password" required minlength="8" autocomplete="new-password" /></label>
+        <button class="primary" type="submit">Join workspace</button>
+      </form>
+
+      <p id="auth-msg" class="msg"></p>
+    </section>
+
+    <!-- Chat view -->
+    <section id="view-chat" class="view" hidden>
+      <div class="chat-shell">
+        <aside class="convos">
+          <button id="new-chat" class="primary small">+ New chat</button>
+          <ul id="convo-list"></ul>
+        </aside>
+        <div class="chat-main">
+          <div id="messages" class="messages"></div>
+          <form id="chat-form" class="chat-input">
+            <select id="model-select" title="Model">
+              <option value="google/gemini-flash-1.5">Gemini Flash (fast)</option>
+              <option value="openai/gpt-4o-mini">GPT-4o mini</option>
+              <option value="anthropic/claude-3.5-haiku">Claude Haiku</option>
+            </select>
+            <textarea id="prompt" rows="1" placeholder="Ask Lyra…" required></textarea>
+            <button class="primary" type="submit">Send</button>
+          </form>
+          <p id="chat-msg" class="msg"></p>
+        </div>
+      </div>
+    </section>
+
+    <!-- Badges view -->
+    <section id="view-badges" class="view" hidden>
+      <h2>Learning badges</h2>
+      <div id="badge-grid" class="badge-grid"></div>
+    </section>
+
+    <!-- Dashboard view (admins) -->
+    <section id="view-dashboard" class="view" hidden>
+      <h2>Workspace dashboard</h2>
+      <div id="pool-summary" class="pool-summary"></div>
+
+      <div class="dash-cols">
+        <div class="card">
+          <h3>Members</h3>
+          <table id="members-table" class="table"></table>
+        </div>
+        <div class="card">
+          <h3>Invite a member</h3>
+          <form id="invite-form" class="authform">
+            <label>Email (optional for children)<input name="email" type="email" /></label>
+            <label>First name<input name="firstName" /></label>
+            <label>Role<select name="role" id="invite-role"></select></label>
+            <button class="primary" type="submit">Create invite</button>
+          </form>
+          <div id="invite-result" class="invite-result"></div>
+        </div>
+      </div>
+      <p class="fineprint">🔒 This dashboard shows usage totals only. Members' conversations are encrypted and never visible here.</p>
+    </section>
+  </main>
+
+  <script src="/app.js" type="module"></script>
+</body>
+</html>
