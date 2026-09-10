@@ -7,7 +7,8 @@ import { pool } from '../db.js';
 import { asyncHandler, HttpError } from '../middleware/errors.js';
 import { requireAuth, requireAdmin } from '../middleware/auth.js';
 import { makeInviteToken } from '../services/authService.js';
-import { isValidRole, roleMatchesTenant, isAdmin } from '../domain/roles.js';
+import { isValidRole, roleMatchesTenant, isAdmin, isSupervised } from '../domain/roles.js';
+import { CONSENT_TEXT, CONSENT_TEXT_VERSION, CONSENT_TYPE_MINOR } from '../domain/consent.js';
 import config from '../config.js';
 
 const router = Router();
@@ -18,12 +19,30 @@ async function tenantType(tenantId) {
   return rows[0]?.type;
 }
 
+// The consent wording admins must acknowledge when provisioning a minor.
+router.get('/consent-text', (req, res) => {
+  res.json({ version: CONSENT_TEXT_VERSION, text: CONSENT_TEXT });
+});
+
 // Create an invite for a new member. Returns a one-time acceptance link.
+// Provisioning a supervised (child/student) account requires the admin to
+// acknowledge consent; that acknowledgement is recorded for audit.
 router.post('/invites', asyncHandler(async (req, res) => {
-  const { email, firstName, role, groupId } = req.body || {};
+  const { email, firstName, role, groupId, consentAcknowledged, consentVersion } = req.body || {};
   const type = await tenantType(req.user.tenant_id);
   if (!isValidRole(role) || !roleMatchesTenant(role, type)) {
     throw new HttpError(400, 'BAD_ROLE', `Role must be valid for a ${type} tenant`);
+  }
+  const minor = isSupervised(role);
+  if (minor) {
+    if (consentAcknowledged !== true) {
+      throw new HttpError(400, 'CONSENT_REQUIRED',
+        'You must acknowledge parental/institutional consent to provision a minor account');
+    }
+    if (consentVersion !== CONSENT_TEXT_VERSION) {
+      throw new HttpError(409, 'CONSENT_OUTDATED',
+        'The consent text has changed; please re-read and acknowledge the current version');
+    }
   }
   if (groupId) {
     const g = await pool.query('SELECT 1 FROM groups WHERE id = $1 AND tenant_id = $2', [groupId, req.user.tenant_id]);
@@ -36,6 +55,14 @@ router.post('/invites', asyncHandler(async (req, res) => {
      VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING id, expires_at`,
     [req.user.tenant_id, groupId || null, email ? email.toLowerCase() : null, firstName || null, role, token_hash, expires],
   );
+  if (minor) {
+    await pool.query(
+      `INSERT INTO consent_records
+         (tenant_id, invite_id, consented_by_user_id, subject_role, consent_type, consent_text_version, ip)
+       VALUES ($1, $2, $3, $4, $5, $6, $7)`,
+      [req.user.tenant_id, rows[0].id, req.user.id, role, CONSENT_TYPE_MINOR, CONSENT_TEXT_VERSION, req.ip],
+    );
+  }
   await pool.query(
     `INSERT INTO audit_log (tenant_id, actor_user_id, action, target, ip)
      VALUES ($1, $2, 'invite.create', $3, $4)`,

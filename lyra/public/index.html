@@ -103,6 +103,10 @@
             <label>Email (optional for children)<input name="email" type="email" /></label>
             <label>First name<input name="firstName" /></label>
             <label>Role<select name="role" id="invite-role"></select></label>
+            <div id="consent-block" class="consent-block" hidden>
+              <label class="consent"><input type="checkbox" id="consent-check" />
+                <span id="consent-text"></span></label>
+            </div>
             <button class="primary" type="submit">Create invite</button>
           </form>
           <div id="invite-result" class="invite-result"></div>

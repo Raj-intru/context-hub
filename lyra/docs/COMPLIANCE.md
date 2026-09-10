@@ -19,9 +19,17 @@ compliance claims on a website or sales deck without a qualified reviewer.
 
 ## What the architecture already gives you
 
-- **Verifiable parental/institutional consent flow:** admins (parent/IT admin)
-  provision and invite minors; children activate via a token. Add an explicit
-  consent checkbox + timestamp to the invite-acceptance UI to record consent.
+- **Verifiable parental/institutional consent (implemented):** provisioning a
+  supervised (child/student) account requires the admin to acknowledge a
+  versioned consent statement. Each acknowledgement is written to
+  `consent_records` — who consented, when, the subject role, the consent text
+  version, and IP — and is linked to the minor's account when they activate.
+  The API refuses a minor invite without it (`CONSENT_REQUIRED`) and refuses a
+  stale consent version (`CONSENT_OUTDATED`). See `src/domain/consent.js`,
+  `POST /api/invites`, and the E2E test. Note: this records the authorizing
+  adult's acknowledgement; it is not, by itself, identity verification of that
+  adult — pair with an appropriate COPPA verifiable-consent method (e.g.
+  a nominal card charge via Stripe, or signed form) for under-13 in the US.
 - **Data isolation & least privilege:** RLS + non-owner DB role.
 - **Audit trail:** `audit_log` records admin actions (invites, member changes).
   Extend to cover logins and data exports for audit readiness.
@@ -35,7 +43,9 @@ compliance claims on a website or sales deck without a qualified reviewer.
 - [ ] **Data retention & deletion:** implement retention limits and a
       data-subject **export + delete** path (there is a to-do for this; the
       schema's `ON DELETE CASCADE` makes account deletion clean).
-- [ ] **Consent capture:** persist the consenting admin, timestamp, and scope.
+- [x] **Consent capture:** persist the consenting admin, timestamp, and scope
+      (done — `consent_records`). Still to add for US under-13: a verifiable
+      consent *method* (not just acknowledgement).
 - [ ] **Data Processing Agreements** with each subprocessor you actually use
       (OpenRouter, the underlying model providers, OpenAI moderation, Stripe,
       your email provider, your host).

@@ -91,6 +91,10 @@ input, textarea, select { font: inherit; }
 .table { width: 100%; border-collapse: collapse; font-size: 13px; }
 .table td, .table th { text-align: left; padding: 8px 6px; border-bottom: 1px solid var(--line); }
 .table th { color: var(--muted); font-size: 11px; text-transform: uppercase; }
+.consent-block { background: #fffbeb; border: 1px solid #fde68a; border-radius: 10px; padding: 12px; }
+@media (prefers-color-scheme: dark) { .consent-block { background: #2a2410; border-color: #4d431a; } }
+.consent { display: flex; gap: 8px; align-items: flex-start; font-size: 12px; font-weight: 500; color: var(--ink); }
+.consent input { margin-top: 2px; }
 .invite-result { margin-top: 12px; font-size: 12px; word-break: break-all; }
 .invite-result code { background: var(--bg); padding: 8px; border-radius: 8px; display: block; border: 1px solid var(--line); }
 .fineprint { color: var(--muted); font-size: 12px; margin-top: 16px; }

@@ -109,6 +109,27 @@ CREATE TABLE IF NOT EXISTS invites (
 );
 
 -- ---------------------------------------------------------------------------
+-- Consent records: an auditable trail of the authorizing adult's consent to
+-- provision a MINOR account (COPPA verifiable parental consent / school
+-- in-loco-parentis authorization). Captured when an admin invites a supervised
+-- role. Records WHO consented, WHEN, to WHAT (role), and the consent text
+-- version, so consent can be evidenced and re-collected if the text changes.
+-- ---------------------------------------------------------------------------
+CREATE TABLE IF NOT EXISTS consent_records (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    tenant_id UUID NOT NULL REFERENCES tenants(id) ON DELETE CASCADE,
+    invite_id UUID REFERENCES invites(id) ON DELETE SET NULL,
+    subject_user_id UUID REFERENCES users(id) ON DELETE SET NULL,
+    consented_by_user_id UUID REFERENCES users(id) ON DELETE SET NULL,
+    subject_role VARCHAR(20) NOT NULL,
+    consent_type VARCHAR(40) NOT NULL,       -- e.g. 'minor_provisioning'
+    consent_text_version VARCHAR(40) NOT NULL,
+    ip INET,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+CREATE INDEX IF NOT EXISTS idx_consent_tenant ON consent_records(tenant_id);
+
+-- ---------------------------------------------------------------------------
 -- Conversations & messages. `content` is application-encrypted (AES-256-GCM).
 -- ---------------------------------------------------------------------------
 CREATE TABLE IF NOT EXISTS conversations (

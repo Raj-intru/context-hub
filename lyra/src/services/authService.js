@@ -119,6 +119,11 @@ export async function acceptInvite({ token, firstName, password }) {
         firstName || invite.first_name || null, password_hash],
     );
     await client.query('UPDATE invites SET accepted_at = NOW() WHERE id = $1', [invite.id]);
+    // Link any consent record captured at invite time to the now-created account.
+    await client.query(
+      'UPDATE consent_records SET subject_user_id = $1 WHERE invite_id = $2 AND subject_user_id IS NULL',
+      [user.rows[0].id, invite.id],
+    );
     await client.query('COMMIT');
     const u = user.rows[0];
     return { user: publicUser(u), token: sessionFor(u) };

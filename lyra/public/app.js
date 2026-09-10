@@ -175,17 +175,41 @@ async function loadDashboard() {
   (ROLE_OPTIONS[t.type] || []).forEach(([val, label]) => {
     const o = document.createElement('option'); o.value = val; o.textContent = label; roleSel.appendChild(o);
   });
+
+  // Load the consent wording once; show the acknowledgement only for minors.
+  if (!state.consent) {
+    try { state.consent = await api('/consent-text'); } catch { state.consent = null; }
+  }
+  if (state.consent) $('#consent-text').textContent = state.consent.text;
+  updateConsentVisibility();
 }
+
+const SUPERVISED_ROLES = ['child', 'student'];
+function updateConsentVisibility() {
+  const role = $('#invite-role').value;
+  const show = SUPERVISED_ROLES.includes(role);
+  $('#consent-block').hidden = !show;
+  if (!show) $('#consent-check').checked = false;
+}
+$('#invite-role').addEventListener('change', updateConsentVisibility);
 
 $('#invite-form').addEventListener('submit', async (e) => {
   e.preventDefault();
   const f = new FormData(e.target);
+  const role = f.get('role');
+  const minor = SUPERVISED_ROLES.includes(role);
+  if (minor && !$('#consent-check').checked) {
+    $('#invite-result').textContent = 'Please acknowledge consent to provision a minor account.';
+    return;
+  }
   try {
     const res = await api('/invites', { method: 'POST', body: {
-      email: f.get('email') || undefined, firstName: f.get('firstName') || undefined, role: f.get('role'),
+      email: f.get('email') || undefined, firstName: f.get('firstName') || undefined, role,
+      ...(minor ? { consentAcknowledged: true, consentVersion: state.consent?.version } : {}),
     } });
     $('#invite-result').innerHTML = `Invite created. Share this link:<code>${escapeHtml(res.acceptUrl)}</code>`;
     e.target.reset();
+    updateConsentVisibility();
   } catch (err) { $('#invite-result').textContent = err.message; }
 });
 

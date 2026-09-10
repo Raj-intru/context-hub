@@ -95,8 +95,18 @@ try {
   assert.equal(msgs.json.messages[0].content, 'Hello Lyra');
   ok('encrypted history round-trips via API');
 
-  // 5. Invite a child, accept it
-  const invite = await call('POST', '/api/invites', { token: parentToken, body: { firstName: 'Kid', role: 'child' } });
+  // 5a. Inviting a child WITHOUT consent is rejected
+  const noConsent = await call('POST', '/api/invites', { token: parentToken, body: { firstName: 'Kid', role: 'child' } });
+  assert.equal(noConsent.status, 400);
+  assert.equal(noConsent.json.error, 'CONSENT_REQUIRED');
+  ok('minor invite without consent is rejected (400)');
+
+  // 5b. Invite a child WITH consent, accept it
+  const consent = await call('GET', '/api/consent-text', { token: parentToken });
+  assert.ok(consent.json.version && consent.json.text, 'consent text is served');
+  const invite = await call('POST', '/api/invites', { token: parentToken, body: {
+    firstName: 'Kid', role: 'child', consentAcknowledged: true, consentVersion: consent.json.version,
+  } });
   assert.equal(invite.status, 201, JSON.stringify(invite.json));
   const accept = await call('POST', '/api/auth/accept-invite', { body: {
     token: invite.json.token, firstName: 'Kid', password: 'kidsecret',
