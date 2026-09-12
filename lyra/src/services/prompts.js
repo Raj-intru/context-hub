@@ -44,28 +44,34 @@ const DIRECT_CORE = `You are a helpful, accurate assistant. Be clear and concise
  * @param {boolean} opts.supervised  child/student -> Socratic sandwich
  * @param {string}  opts.userPrompt
  * @param {Array}   opts.history  prior [{role, content}] turns (already decrypted)
+ * @param {object=} opts.grounding  { sources, inScope } from RAG retrieval, or null.
+ *   When present, the assistant is bound to answer ONLY from `sources` and to
+ *   cite them; when `inScope` is false it must refuse (out-of-tenant-context).
  */
-export function buildMessages({ supervised, userPrompt, history = [] }) {
+export function buildMessages({ supervised, userPrompt, history = [], grounding = null }) {
   const safeHistory = Array.isArray(history)
     ? history
         .filter((m) => m && (m.role === 'user' || m.role === 'assistant') && typeof m.content === 'string')
         .slice(-20) // cap context window growth
     : [];
 
-  if (!supervised) {
-    return [
-      { role: 'system', content: DIRECT_CORE },
-      ...safeHistory,
-      { role: 'user', content: userPrompt },
-    ];
-  }
+  const core = supervised ? `${ANTI_JAILBREAK_PREFIX}\n\n${SOCRATIC_CORE}` : DIRECT_CORE;
 
-  return [
-    { role: 'system', content: `${ANTI_JAILBREAK_PREFIX}\n\n${SOCRATIC_CORE}` },
-    ...safeHistory,
-    { role: 'user', content: userPrompt },
-    { role: 'system', content: SUFFIX_REMINDER },
-  ];
+  const messages = [{ role: 'system', content: core }];
+  if (grounding) messages.push({ role: 'system', content: groundingInstruction(grounding) });
+  messages.push(...safeHistory, { role: 'user', content: userPrompt });
+  if (supervised) messages.push({ role: 'system', content: SUFFIX_REMINDER });
+  return messages;
 }
 
-export const _internal = { ANTI_JAILBREAK_PREFIX, SOCRATIC_CORE, SUFFIX_REMINDER };
+function groundingInstruction({ sources, inScope }) {
+  if (!inScope || !sources) {
+    return `[GROUNDING] The workspace's materials contain nothing relevant to this question. `
+      + `Do not answer from outside knowledge. Say it isn't covered in the materials and suggest `
+      + `asking a teacher or adding the topic to the workspace.`;
+  }
+  return `[GROUNDING] Answer using ONLY the sources below. If they don't contain the answer, say so — `
+    + `do not use outside knowledge. Cite the sources you use as [1], [2], etc.\n\n${sources}`;
+}
+
+export const _internal = { ANTI_JAILBREAK_PREFIX, SOCRATIC_CORE, SUFFIX_REMINDER, groundingInstruction };

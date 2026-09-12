@@ -13,6 +13,8 @@
     "dev": "node --watch src/server.js",
     "test": "node --test test/*.test.js",
     "test:e2e": "node test/e2e.mjs",
+    "test:rag": "node test/rag-e2e.mjs",
+    "eval:rag": "node scripts/eval-rag.js",
     "migrate": "node scripts/migrate.js",
     "demo": "node scripts/demo-server.mjs",
     "demo:shots": "node scripts/demo-shots.mjs"

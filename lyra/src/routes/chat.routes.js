@@ -20,6 +20,7 @@ import { isSupervised } from '../domain/roles.js';
 import { moderate } from '../services/moderation.js';
 import { complete, LlmError } from '../services/llm.js';
 import { buildMessages } from '../services/prompts.js';
+import { retrieve, formatContext } from '../services/retrieval.js';
 import { checkBudget, recordUsage } from '../services/tokens.js';
 import { encryptContent, decryptContent } from '../crypto/content.js';
 import config from '../config.js';
@@ -84,7 +85,20 @@ router.post('/chat', asyncHandler(async (req, res) => {
     for (const row of hist.rows.reverse()) {
       history.push({ role: row.sender_role, content: await decryptContent(row.content) });
     }
-    return { conversationId: convId, history };
+
+    // RAG: if this tenant has a knowledge base, retrieve grounded context so the
+    // assistant answers only from the workspace's materials (and cites them) or
+    // refuses. No KB -> ungrounded chat, as before.
+    let grounding = null;
+    let citations = [];
+    const kb = await c.query('SELECT 1 FROM knowledge_sources LIMIT 1');
+    if (kb.rows.length) {
+      const { hits, inScope } = await retrieve(c, { query: prompt });
+      const fmt = formatContext(hits);
+      grounding = { sources: fmt.sources, inScope };
+      citations = fmt.citations;
+    }
+    return { conversationId: convId, history, grounding, citations };
   });
 
   if (prep.blocked) {
@@ -93,7 +107,7 @@ router.post('/chat', asyncHandler(async (req, res) => {
   }
 
   // 4. Model call (no DB transaction held here).
-  const messages = buildMessages({ supervised, userPrompt: prompt, history: prep.history });
+  const messages = buildMessages({ supervised, userPrompt: prompt, history: prep.history, grounding: prep.grounding });
   let result;
   try {
     result = await complete({ model, messages });
@@ -127,6 +141,7 @@ router.post('/chat', asyncHandler(async (req, res) => {
     reply: result.content,
     tokensUsed: result.tokensUsed,
     model: result.modelUsed,
+    citations: prep.citations || [],
   });
 }));
 

@@ -270,3 +270,67 @@ INSERT INTO badges (title, description, subject, icon_emoji) VALUES
   ('Fluent Explorer', 'Completed 5 conversational language scenarios.', 'language', '🌍'),
   ('Persistent Thinker', 'Worked through a hard problem step by step.', 'general', '🧠')
 ON CONFLICT (title) DO NOTHING;
+
+-- ===========================================================================
+-- Phase 1: per-tenant knowledge base for Retrieval-Augmented Generation (RAG).
+--
+-- This is what makes the tutor "context-bound": a school (or family) provides
+-- its own materials; retrieval is filtered to the caller's tenant, ENFORCED by
+-- RLS (not just app code). A tenant physically cannot retrieve another's chunks.
+-- Chunk text is encrypted at rest (like chat); a short, non-sensitive citation
+-- label is kept in the clear so answers can cite their source.
+-- ===========================================================================
+CREATE EXTENSION IF NOT EXISTS vector;
+
+-- A source document/collection the tenant added (upload, connector, curriculum).
+CREATE TABLE IF NOT EXISTS knowledge_sources (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    tenant_id UUID NOT NULL REFERENCES tenants(id) ON DELETE CASCADE,
+    title VARCHAR(300) NOT NULL,
+    kind VARCHAR(40) NOT NULL DEFAULT 'upload',   -- upload | curriculum | oer | connector
+    uri TEXT,
+    license VARCHAR(120),                          -- e.g. 'CC BY 4.0', 'school-owned'
+    subject VARCHAR(60),
+    year_level VARCHAR(30),
+    created_by UUID REFERENCES users(id) ON DELETE SET NULL,
+    chunk_count INT NOT NULL DEFAULT 0,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+-- Embedded, retrievable chunks. EMBEDDING_DIM (config) must match vector(N).
+CREATE TABLE IF NOT EXISTS chunks (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    tenant_id UUID NOT NULL REFERENCES tenants(id) ON DELETE CASCADE,
+    source_id UUID NOT NULL REFERENCES knowledge_sources(id) ON DELETE CASCADE,
+    ordinal INT NOT NULL,
+    citation_label VARCHAR(300),                   -- e.g. 'Room 3B Fractions Unit · p2'
+    content_ciphertext BYTEA NOT NULL,             -- AES-256-GCM, like messages
+    embedding vector(1536),
+    embed_model VARCHAR(60),
+    token_count INT,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS idx_chunks_source ON chunks(source_id);
+-- HNSW ANN index on cosine distance (embeddings are L2-normalized in the app).
+CREATE INDEX IF NOT EXISTS idx_chunks_embedding
+    ON chunks USING hnsw (embedding vector_cosine_ops);
+
+-- RLS: knowledge is TENANT-scoped (the whole school/family shares its KB),
+-- unlike conversations which are per-user. Isolation across tenants is absolute.
+ALTER TABLE knowledge_sources ENABLE ROW LEVEL SECURITY;
+ALTER TABLE chunks ENABLE ROW LEVEL SECURITY;
+
+DROP POLICY IF EXISTS ks_tenant ON knowledge_sources;
+CREATE POLICY ks_tenant ON knowledge_sources
+  USING (tenant_id = app_current_tenant_id())
+  WITH CHECK (tenant_id = app_current_tenant_id());
+
+DROP POLICY IF EXISTS chunks_tenant ON chunks;
+CREATE POLICY chunks_tenant ON chunks
+  USING (tenant_id = app_current_tenant_id())
+  WITH CHECK (tenant_id = app_current_tenant_id());
+
+-- New tables need explicit grants (the earlier ALL TABLES grant ran before this).
+GRANT SELECT, INSERT, UPDATE, DELETE ON knowledge_sources TO lyra_app;
+GRANT SELECT, INSERT, UPDATE, DELETE ON chunks TO lyra_app;

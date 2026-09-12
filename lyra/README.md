@@ -32,6 +32,7 @@ and/or counsel and must not be asserted as-is.
 | Admin dashboard | ✅ aggregates only (no chat content) |
 | Weekly digest | ✅ optional cron, content-free email |
 | Gamification | ✅ badges + unlock endpoint (self-only) |
+| Context-bound RAG | ✅ per-tenant pgvector knowledge base, grounded answers with citations, out-of-scope refusal, tenant-isolated by RLS — see [docs/RAG.md](docs/RAG.md) |
 | Web client | ✅ dependency-free SPA (auth, chat, dashboard, badges, invites) |
 | Tests | ✅ unit suite + a real-Postgres E2E smoke test |
 
@@ -109,6 +110,7 @@ DATABASE_URL=postgres://lyra_app:apppw@127.0.0.1:5432/lyra npm run test:e2e
 | `PATCH /api/members/:id` | admin | Pause/resume, cap, reassign group |
 | `GET /api/dashboard` | admin | Aggregate usage only |
 | `GET /api/badges/me` · `POST /api/badges/unlock` | user | Gamification |
+| `POST /api/knowledge/sources` · `GET` · `DELETE /:id` | admin (list: any member) | Manage the tenant's RAG knowledge base |
 | `POST /api/billing/checkout` | admin | Start a Stripe subscription |
 | `POST /api/webhooks/stripe` | Stripe sig | Renewals / plan changes |
 | `GET /healthz` · `GET /readyz` | — | Liveness / readiness |
