@@ -13,6 +13,7 @@ import dashboardRoutes from './routes/dashboard.routes.js';
 import badgeRoutes from './routes/badges.routes.js';
 import knowledgeRoutes from './routes/knowledge.routes.js';
 import meRoutes from './routes/me.routes.js';
+import contextRoutes from './routes/context.routes.js';
 import { billingRouter, stripeWebhookHandler } from './routes/billing.routes.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -55,6 +56,7 @@ export function createApp() {
   app.use('/api', badgeRoutes);
   app.use('/api', knowledgeRoutes);
   app.use('/api', meRoutes);
+  app.use('/api', contextRoutes);
   app.use('/api', billingRouter);
 
   // Static web client.

@@ -111,6 +111,9 @@ DATABASE_URL=postgres://lyra_app:apppw@127.0.0.1:5432/lyra npm run test:e2e
 | `GET /api/dashboard` | admin | Aggregate usage only |
 | `GET /api/badges/me` · `POST /api/badges/unlock` | user | Gamification |
 | `POST /api/knowledge/sources` · `GET` · `DELETE /:id` | admin (list: any member) | Manage the tenant's RAG knowledge base |
+| `GET /api/scopes` | user | List shared curriculum packs (e.g. AU curriculum) |
+| `GET/PUT /api/children/:id/context` | admin | Choose which packs/sources a child's tutor may use |
+| `GET /api/me/appearance-options` · `PATCH /api/me/preferences` | user | Per-user theme + accent colour |
 | `POST /api/billing/checkout` | admin | Start a Stripe subscription |
 | `POST /api/webhooks/stripe` | Stripe sig | Renewals / plan changes |
 | `GET /healthz` · `GET /readyz` | — | Liveness / readiness |

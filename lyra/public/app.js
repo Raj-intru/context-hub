@@ -230,9 +230,49 @@ async function loadDashboard() {
   }
   if (state.consent) $('#consent-text').textContent = state.consent.text;
   updateConsentVisibility();
+
+  await loadContextCard(data.members);
 }
 
 const SUPERVISED_ROLES = ['child', 'student'];
+
+// ---- Learning context (parents/teachers choose a child's grounding) ----
+async function loadContextCard(members) {
+  const kids = (members || []).filter((m) => SUPERVISED_ROLES.includes(m.role));
+  const card = $('#ctx-card');
+  card.hidden = kids.length === 0;
+  if (!kids.length) return;
+
+  if (!state.scopes) { try { state.scopes = (await api('/scopes')).scopes; } catch { state.scopes = []; } }
+  $('#ctx-scopes').innerHTML = state.scopes.map((s) => `
+    <label><input type="checkbox" value="${escapeHtml(s.scope_key)}" />
+      <span class="subj">${escapeHtml(s.subject || s.scope_key)}</span>
+      <span class="yr">${escapeHtml(s.year_level || '')}</span></label>`).join('')
+    || '<span class="yr">No curriculum packs available yet.</span>';
+
+  const sel = $('#ctx-child'); sel.innerHTML = '';
+  kids.forEach((k) => { const o = document.createElement('option'); o.value = k.user_id; o.textContent = `${k.first_name || '—'} · ${k.role}`; sel.appendChild(o); });
+  sel.onchange = loadChildContext;
+  await loadChildContext();
+}
+async function loadChildContext() {
+  const id = $('#ctx-child').value; if (!id) return;
+  setMsg('#ctx-msg', '');
+  try {
+    const { context } = await api(`/children/${id}/context`);
+    $('#ctx-year').value = context.year_level || '';
+    const chosen = new Set(context.scope_keys || []);
+    $$('#ctx-scopes input').forEach((cb) => (cb.checked = chosen.has(cb.value)));
+  } catch (e) { setMsg('#ctx-msg', e.message, 'error'); }
+}
+$('#ctx-save').addEventListener('click', async () => {
+  const id = $('#ctx-child').value; if (!id) return;
+  const scopeKeys = $$('#ctx-scopes input:checked').map((cb) => cb.value);
+  try {
+    await api(`/children/${id}/context`, { method: 'PUT', body: { yearLevel: $('#ctx-year').value || null, scopeKeys } });
+    setMsg('#ctx-msg', 'Saved — the tutor will use only these materials for this child.', 'ok');
+  } catch (e) { setMsg('#ctx-msg', e.message, 'error'); }
+});
 function updateConsentVisibility() {
   const role = $('#invite-role').value;
   const show = SUPERVISED_ROLES.includes(role);

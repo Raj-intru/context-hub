@@ -21,6 +21,7 @@ import { moderate } from '../services/moderation.js';
 import { complete, LlmError } from '../services/llm.js';
 import { buildMessages } from '../services/prompts.js';
 import { retrieve, formatContext } from '../services/retrieval.js';
+import { LIBRARY_TENANT_ID } from '../domain/library.js';
 import { checkBudget, recordUsage } from '../services/tokens.js';
 import { encryptContent, decryptContent } from '../crypto/content.js';
 import config from '../config.js';
@@ -86,19 +87,16 @@ router.post('/chat', asyncHandler(async (req, res) => {
       history.push({ role: row.sender_role, content: await decryptContent(row.content) });
     }
 
-    // RAG: if this tenant has a knowledge base, retrieve grounded context so the
-    // assistant answers only from the workspace's materials (and cites them) or
-    // refuses. No KB -> ungrounded chat, as before.
-    let grounding = null;
-    let citations = [];
+    // Does this workspace have its own knowledge base? (RLS-scoped to tenant.)
     const kb = await c.query('SELECT 1 FROM knowledge_sources LIMIT 1');
-    if (kb.rows.length) {
-      const { hits, inScope } = await retrieve(c, { query: prompt });
-      const fmt = formatContext(hits);
-      grounding = { sources: fmt.sources, inScope };
-      citations = fmt.citations;
+    // A supervised child may also have selected shared curriculum packs.
+    let childCtx = null;
+    if (supervised) {
+      const cc = await c.query(
+        'SELECT scope_keys, enabled_source_ids FROM child_context WHERE child_user_id = $1', [user.id]);
+      childCtx = cc.rows[0] || null;
     }
-    return { conversationId: convId, history, grounding, citations };
+    return { conversationId: convId, history, familyHasKB: kb.rows.length > 0, childCtx };
   });
 
   if (prep.blocked) {
@@ -106,8 +104,31 @@ router.post('/chat', asyncHandler(async (req, res) => {
     throw new HttpError(status, prep.blocked, budgetMessage(prep.blocked));
   }
 
+  // 3b. Grounded retrieval (outside a held transaction). Merge the workspace's
+  // own sources with any shared curriculum packs the child has selected, then
+  // gate to the most relevant — or refuse if nothing is in scope.
+  let grounding = null;
+  let citations = [];
+  const scopeKeys = prep.childCtx?.scope_keys || [];
+  const sourceIds = prep.childCtx?.enabled_source_ids || null;
+  if (prep.familyHasKB || scopeKeys.length) {
+    const hits = [];
+    if (prep.familyHasKB) {
+      const r = await withUser(user, (c) => retrieve(c, { query: prompt, sourceIds }));
+      hits.push(...r.hits);
+    }
+    if (scopeKeys.length) {
+      const r = await withUser({ ...user, tenant_id: LIBRARY_TENANT_ID }, (c) => retrieve(c, { query: prompt, scopeKeys }));
+      hits.push(...r.hits);
+    }
+    hits.sort((a, b) => a.distance - b.distance);
+    const fmt = formatContext(hits.slice(0, 5));
+    grounding = { sources: fmt.sources, inScope: fmt.citations.length > 0 };
+    citations = fmt.citations;
+  }
+
   // 4. Model call (no DB transaction held here).
-  const messages = buildMessages({ supervised, userPrompt: prompt, history: prep.history, grounding: prep.grounding });
+  const messages = buildMessages({ supervised, userPrompt: prompt, history: prep.history, grounding });
   let result;
   try {
     result = await complete({ model, messages });
@@ -141,7 +162,7 @@ router.post('/chat', asyncHandler(async (req, res) => {
     reply: result.content,
     tokensUsed: result.tokensUsed,
     model: result.modelUsed,
-    citations: prep.citations || [],
+    citations,
   });
 }));
 

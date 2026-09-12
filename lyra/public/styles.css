@@ -145,6 +145,12 @@ input, textarea, select { font-family: var(--body); }
 .invite-result { margin-top: 12px; font-size: 12px; word-break: break-all; }
 .invite-result code { background: var(--surface-2); padding: 9px; border-radius: 8px; display: block; border: 1px solid var(--line); font-family: var(--mono); }
 .fineprint { color: var(--muted); font-size: 12.5px; margin-top: 16px; }
+.ctx-scopes { display: flex; flex-direction: column; gap: 6px; margin-top: 6px; }
+.ctx-scopes label { display: flex; align-items: center; gap: 9px; font-size: 13.5px; font-weight: 500; color: var(--ink);
+  background: var(--surface-2); border: 1px solid var(--line); border-radius: var(--radius-sm); padding: 9px 11px; cursor: pointer; }
+.ctx-scopes input { accent-color: var(--brand); }
+.ctx-scopes .subj { font-weight: 600; }
+.ctx-scopes .yr { color: var(--muted); font-size: 12px; }
 
 @media (max-width: 720px) {
   .chat-shell { grid-template-columns: 1fr; }

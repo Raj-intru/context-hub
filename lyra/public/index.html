@@ -128,6 +128,22 @@
           <div id="invite-result" class="invite-result"></div>
         </div>
       </div>
+
+      <div class="card" id="ctx-card" style="margin-top:16px" hidden>
+        <h3>Learning context</h3>
+        <p class="sub" style="font-size:13px">Choose which materials a child's tutor may use. It answers only from what you enable here — and cites its source.</p>
+        <div class="authform" style="max-width:520px">
+          <label>Child<select id="ctx-child"></select></label>
+          <label>Year level<input id="ctx-year" placeholder="e.g. Year 4" /></label>
+          <div>
+            <span style="font-size:12.5px;font-weight:600;color:var(--muted)">Curriculum packs</span>
+            <div id="ctx-scopes" class="ctx-scopes"></div>
+          </div>
+          <button class="primary" id="ctx-save" type="button">Save learning context</button>
+          <p id="ctx-msg" class="msg"></p>
+        </div>
+      </div>
+
       <p class="fineprint">🔒 This dashboard shows usage totals only. Members' conversations are encrypted and never visible here.</p>
     </section>
   </main>

@@ -341,3 +341,39 @@ GRANT SELECT, INSERT, UPDATE, DELETE ON chunks TO lyra_app;
 -- ===========================================================================
 ALTER TABLE users ADD COLUMN IF NOT EXISTS theme_pref  VARCHAR(10) NOT NULL DEFAULT 'system';
 ALTER TABLE users ADD COLUMN IF NOT EXISTS accent_pref VARCHAR(20) NOT NULL DEFAULT 'indigo';
+
+-- ===========================================================================
+-- Phase 4: families/schools choose which context the tutor may use per child.
+--
+-- Shared curriculum packs (e.g. Australian Curriculum by year/subject) live in
+-- a dedicated "Lyra Curriculum Library" tenant and are tagged with a scope_key
+-- like 'au:year4:maths'. They are read under that library's own tenant context,
+-- so no RLS is relaxed. A per-child `child_context` row records which shared
+-- packs and which of the family's own sources are active for that child; the
+-- tutor retrieves only from the selected set.
+-- ===========================================================================
+ALTER TABLE knowledge_sources ADD COLUMN IF NOT EXISTS scope_key VARCHAR(80);
+CREATE INDEX IF NOT EXISTS idx_ks_scope ON knowledge_sources(scope_key);
+
+-- The well-known library tenant that holds shared curriculum packs.
+INSERT INTO tenants (id, type, name, token_pool_limit)
+VALUES ('00000000-0000-4000-8000-000000000001', 'school', 'Lyra Curriculum Library', 0)
+ON CONFLICT (id) DO NOTHING;
+
+-- One row per supervised child: what context is enabled for them.
+CREATE TABLE IF NOT EXISTS child_context (
+    child_user_id UUID PRIMARY KEY REFERENCES users(id) ON DELETE CASCADE,
+    tenant_id UUID NOT NULL REFERENCES tenants(id) ON DELETE CASCADE,
+    year_level VARCHAR(30),
+    region VARCHAR(30),                         -- e.g. 'AU-NSW'
+    scope_keys TEXT[] NOT NULL DEFAULT '{}',    -- selected shared packs
+    enabled_source_ids UUID[],                  -- NULL = all family sources
+    updated_by UUID REFERENCES users(id) ON DELETE SET NULL,
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+ALTER TABLE child_context ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS child_ctx_tenant ON child_context;
+CREATE POLICY child_ctx_tenant ON child_context
+  USING (tenant_id = app_current_tenant_id())
+  WITH CHECK (tenant_id = app_current_tenant_id());
+GRANT SELECT, INSERT, UPDATE, DELETE ON child_context TO lyra_app;

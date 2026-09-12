@@ -16,7 +16,7 @@ import { encryptContent } from '../crypto/content.js';
 export async function ingestSource(client, opts) {
   const {
     tenantId, createdBy, title, kind = 'upload', uri = null, license = null,
-    subject = null, yearLevel = null, text, preferLexical = false,
+    subject = null, yearLevel = null, scopeKey = null, text, preferLexical = false,
   } = opts;
   if (!title || !text || !text.trim()) throw new Error('ingestSource requires title and non-empty text');
 
@@ -28,9 +28,9 @@ export async function ingestSource(client, opts) {
 
   const src = await client.query(
     `INSERT INTO knowledge_sources
-       (tenant_id, title, kind, uri, license, subject, year_level, created_by, chunk_count)
-     VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9) RETURNING id`,
-    [tenantId, title, kind, uri, license, subject, yearLevel, createdBy || null, chunks.length],
+       (tenant_id, title, kind, uri, license, subject, year_level, scope_key, created_by, chunk_count)
+     VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10) RETURNING id`,
+    [tenantId, title, kind, uri, license, subject, yearLevel, scopeKey, createdBy || null, chunks.length],
   );
   const sourceId = src.rows[0].id;
 
