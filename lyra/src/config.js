@@ -47,6 +47,17 @@ export const config = {
   openAiApiKey: process.env.OPENAI_API_KEY || '',
   moderationFailOpen: process.env.MODERATION_FAIL_OPEN === 'true',
   defaultModel: process.env.DEFAULT_MODEL || 'google/gemini-flash-1.5',
+  // OSS <-> paid routing: cheap open-source model for simple/supervised turns,
+  // a frontier paid model for complex/adult turns. Both flow through OpenRouter.
+  models: {
+    simple: process.env.DEFAULT_MODEL_SIMPLE || 'meta-llama/llama-3.1-8b-instruct',
+    complex: process.env.DEFAULT_MODEL_COMPLEX || 'anthropic/claude-3.5-sonnet',
+  },
+
+  // Which product this deployment is (drives branding/roles/platforms).
+  product: process.env.PRODUCT === 'school' ? 'school' : (process.env.PRODUCT === 'family' ? 'family' : 'both'),
+  // Shared secret Vercel Cron (or your scheduler) must present to run cron routes.
+  cronSecret: process.env.CRON_SECRET || '',
 
   stripeSecretKey: process.env.STRIPE_SECRET_KEY || '',
   stripeWebhookSecret: process.env.STRIPE_WEBHOOK_SECRET || '',

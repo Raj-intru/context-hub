@@ -21,6 +21,7 @@ import { moderate } from '../services/moderation.js';
 import { complete, LlmError } from '../services/llm.js';
 import { buildMessages } from '../services/prompts.js';
 import { retrieve, formatContext } from '../services/retrieval.js';
+import { chooseModel } from '../services/router.js';
 import { LIBRARY_TENANT_ID } from '../domain/library.js';
 import { checkBudget, recordUsage } from '../services/tokens.js';
 import { encryptContent, decryptContent } from '../crypto/content.js';
@@ -33,7 +34,7 @@ const HISTORY_LIMIT = 20;
 
 router.post('/chat', asyncHandler(async (req, res) => {
   const user = req.user;
-  const { prompt, model, conversationId } = req.body || {};
+  const { prompt, model: requestedModel, conversationId } = req.body || {};
   if (typeof prompt !== 'string' || !prompt.trim()) {
     throw new HttpError(400, 'EMPTY_PROMPT', 'A non-empty prompt is required');
   }
@@ -42,6 +43,9 @@ router.post('/chat', asyncHandler(async (req, res) => {
   }
 
   const supervised = isSupervised(user.role);
+  // OSS<->paid routing: cheap OSS for supervised/simple, frontier paid for
+  // complex adult prompts; an explicit client choice always wins.
+  const { model } = chooseModel({ role: user.role, prompt, requestedModel, supervised });
 
   // 1. Moderation for supervised accounts (fails closed by default).
   if (supervised) {

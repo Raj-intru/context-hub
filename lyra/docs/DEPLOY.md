@@ -9,6 +9,54 @@
   (RDS, Cloud SQL, Supabase, Neon). Run `npm run migrate` once against a
   privileged connection to create the schema + `lyra_app` role.
 
+## Fast path — Railway/Render/Fly (persistent server, zero refactor)
+
+The app is a normal long-lived Node server, so a persistent host is the least
+work and runs the in-process cron (weekly digest) as-is.
+
+```bash
+# 1. Provision a managed Postgres WITH pgvector (Neon/Supabase/RDS) in your
+#    users' region (AU schools: ap-southeast-2). Grab a superuser URL for
+#    migration and the pooled URL for the app (as the lyra_app role).
+# 2. Create schema + app role:
+MIGRATE_DATABASE_URL=postgres://owner:...@host/lyra LYRA_APP_DB_PASSWORD=... npm run migrate
+# 3. (optional) seed shared curriculum:
+DATABASE_URL=postgres://lyra_app:...@host/lyra node scripts/ingest-au-curriculum.js
+# 4. Deploy: Railway/Render pick up the Procfile (`web: node src/server.js`).
+#    Set env: DATABASE_URL, JWT_SECRET, CONTENT_ENCRYPTION_KEY, OPENROUTER_API_KEY,
+#    OPENAI_API_KEY, DEFAULT_MODEL_SIMPLE/COMPLEX, PRODUCT, ENABLE_WEEKLY_DIGEST=true.
+```
+
+## Vercel (serverless)
+
+`api/index.js` exports the Express app for `@vercel/node`; `vercel.json` routes
+everything to it and registers a weekly-digest cron. Because functions aren't
+long-lived, use a **pooled** Postgres URL and Vercel Cron (not node-cron).
+
+```bash
+npm i -g vercel && cd lyra && vercel link
+vercel env add DATABASE_URL            # Neon POOLED url (…-pooler…), lyra_app role
+vercel env add JWT_SECRET              # openssl rand -hex 32
+vercel env add CONTENT_ENCRYPTION_KEY  # openssl rand -hex 32
+vercel env add OPENROUTER_API_KEY
+vercel env add OPENAI_API_KEY
+vercel env add CRON_SECRET             # openssl rand -hex 24 (Vercel Cron auth)
+vercel env add DEFAULT_MODEL_SIMPLE
+vercel env add DEFAULT_MODEL_COMPLEX
+vercel deploy --prod
+```
+
+Two offerings = two Vercel projects from the same repo, each with `PRODUCT=family`
+or `PRODUCT=school` and its own domain.
+
+## Model routing (OSS ↔ paid)
+
+`src/services/router.js` picks the cheap OSS model (`DEFAULT_MODEL_SIMPLE`) for
+supervised/simple turns and the frontier paid model (`DEFAULT_MODEL_COMPLEX`)
+for complex adult turns; both go through OpenRouter, and an explicit client
+model choice always wins. This is the gross-margin lever — tune the two model
+ids per your cost target.
+
 ## Required environment
 
 See `.env.example`. In production the server **refuses to boot** without real

@@ -22,8 +22,10 @@ async function main() {
     console.log(`Lyra listening on :${config.port} (${config.env})`);
   });
 
-  // Weekly digest: Sundays 18:00 server time.
-  if (config.enableWeeklyDigest) {
+  // Weekly digest: Sundays 18:00 server time. On serverless (Vercel) the
+  // process isn't long-lived, so use Vercel Cron -> /api/cron/weekly-digest
+  // instead; this in-process scheduler runs on persistent hosts (Railway).
+  if (config.enableWeeklyDigest && !process.env.VERCEL) {
     cron.schedule('0 18 * * 0', () => {
       runWeeklyDigest().catch((e) => console.error('[digest] failed:', e));
     });
