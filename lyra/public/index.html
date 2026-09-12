@@ -4,16 +4,32 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Lyra — Safe AI for families & schools</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,700;12..96,800&family=Public+Sans:ital,wght@0,400;0,500;0,600;0,700;1,400&family=IBM+Plex+Mono:wght@500;600&display=swap" />
   <link rel="stylesheet" href="/styles.css" />
 </head>
 <body>
   <header class="topbar">
-    <div class="brand">✨ Lyra</div>
+    <div class="brand">Lyra</div>
     <nav id="nav" class="nav" hidden>
       <button data-view="chat" class="navbtn">Chat</button>
       <button data-view="badges" class="navbtn">Badges</button>
       <button data-view="dashboard" class="navbtn admin-only" hidden>Dashboard</button>
       <span id="whoami" class="whoami"></span>
+      <div class="appearance">
+        <button id="appearance-btn" class="icon-btn" title="Appearance" aria-haspopup="true">🎨</button>
+        <div id="appearance-menu" class="popover" hidden>
+          <h4>Theme</h4>
+          <div class="theme-toggle" id="theme-toggle">
+            <button data-theme="light">☀︎ Light</button>
+            <button data-theme="dark">☾ Dark</button>
+            <button data-theme="system">◐ Auto</button>
+          </div>
+          <h4>Accent colour</h4>
+          <div class="swatches" id="swatches"></div>
+        </div>
+      </div>
       <button id="logout" class="navbtn ghost">Sign out</button>
     </nav>
   </header>

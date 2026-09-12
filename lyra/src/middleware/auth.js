@@ -21,7 +21,7 @@ export async function requireAuth(req, res, next) {
 
     const { rows } = await query(
       `SELECT id, tenant_id, group_id, role, first_name, email, token_version,
-              monthly_token_cap, is_active
+              monthly_token_cap, is_active, theme_pref, accent_pref
          FROM users WHERE id = $1`,
       [claims.sub],
     );

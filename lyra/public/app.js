@@ -23,6 +23,51 @@ async function api(path, { method = 'GET', body } = {}) {
 function setMsg(el, text, kind = '') { const n = $(el); n.textContent = text; n.className = `msg ${kind}`; }
 function isAdmin() { return state.user && ADMIN_ROLES.includes(state.user.role); }
 
+// ---- Appearance (per-user theme + accent) ----
+const ACCENTS = { indigo: '#4f46e5', violet: '#7c3aed', sky: '#0284c7', teal: '#0d9488',
+  emerald: '#059669', rose: '#e11d48', amber: '#d97706', slate: '#475569' };
+
+function applyAppearance(theme, accent) {
+  const root = document.documentElement;
+  if (theme === 'light' || theme === 'dark') root.setAttribute('data-theme', theme);
+  else root.removeAttribute('data-theme'); // system
+  root.style.setProperty('--brand', ACCENTS[accent] || ACCENTS.indigo);
+  try { localStorage.setItem('lyra_theme', theme); localStorage.setItem('lyra_accent', accent); } catch { /* private mode */ }
+  state.theme = theme; state.accent = accent;
+}
+// Apply any locally-remembered choice immediately, so there's no flash pre-login.
+try { applyAppearance(localStorage.getItem('lyra_theme') || 'system', localStorage.getItem('lyra_accent') || 'indigo'); } catch { /* ignore */ }
+
+async function initAppearance() {
+  let opts;
+  try { opts = await api('/me/appearance-options'); }
+  catch { opts = { theme: state.theme, accent: state.accent, accents: Object.entries(ACCENTS).map(([name, hex]) => ({ name, hex })) }; }
+  applyAppearance(opts.theme, opts.accent);
+  // Theme toggle
+  $$('#theme-toggle button').forEach((b) => {
+    b.classList.toggle('on', b.dataset.theme === state.theme);
+    b.onclick = () => { applyAppearance(b.dataset.theme, state.accent); refreshAppearanceUI(); persistPref({ theme: b.dataset.theme }); };
+  });
+  // Accent swatches (role-gated set comes from the server)
+  const grid = $('#swatches'); grid.innerHTML = '';
+  opts.accents.forEach(({ name, hex }) => {
+    const s = document.createElement('button');
+    s.className = 'swatch'; s.style.background = hex; s.title = name;
+    s.onclick = () => { applyAppearance(state.theme, name); refreshAppearanceUI(); persistPref({ accent: name }); };
+    grid.appendChild(s);
+  });
+  refreshAppearanceUI();
+}
+function refreshAppearanceUI() {
+  $$('#theme-toggle button').forEach((b) => b.classList.toggle('on', b.dataset.theme === state.theme));
+  $$('#swatches .swatch').forEach((s) => s.classList.toggle('on', s.title === state.accent));
+}
+async function persistPref(patch) { try { await api('/me/preferences', { method: 'PATCH', body: patch }); } catch { /* keep local */ } }
+
+$('#appearance-btn').addEventListener('click', (e) => { e.stopPropagation(); $('#appearance-menu').hidden = !$('#appearance-menu').hidden; });
+$('#appearance-menu').addEventListener('click', (e) => e.stopPropagation());
+document.addEventListener('click', () => { const m = $('#appearance-menu'); if (m) m.hidden = true; });
+
 function showView(view) {
   $$('.view').forEach((v) => (v.hidden = true));
   $(`#view-${view}`).hidden = false;
@@ -38,6 +83,9 @@ function afterLogin(result) {
   $('#nav').hidden = false;
   $('#whoami').textContent = `${result.user.firstName || result.user.email || 'You'} · ${result.user.role}`;
   $$('.admin-only').forEach((el) => (el.hidden = !isAdmin()));
+  // Apply the user's saved appearance and build the (role-gated) picker.
+  if (result.user.theme || result.user.accent) applyAppearance(result.user.theme || state.theme, result.user.accent || state.accent);
+  initAppearance();
   showView('chat');
 }
 

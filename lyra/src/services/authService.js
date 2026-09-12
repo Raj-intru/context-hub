@@ -26,6 +26,8 @@ export function publicUser(u) {
     firstName: u.first_name,
     email: u.email,
     groupId: u.group_id ?? null,
+    theme: u.theme_pref ?? 'system',
+    accent: u.accent_pref ?? 'indigo',
   };
 }
 
@@ -73,7 +75,8 @@ export async function signup({ tenantType, tenantName, firstName, email, passwor
 export async function login({ email, password }) {
   if (!email || !password) throw new HttpError(400, 'MISSING_FIELDS', 'email and password required');
   const { rows } = await pool.query(
-    `SELECT id, tenant_id, group_id, role, first_name, email, password_hash, token_version, is_active
+    `SELECT id, tenant_id, group_id, role, first_name, email, password_hash, token_version, is_active,
+            theme_pref, accent_pref
        FROM users WHERE email = $1`,
     [email.toLowerCase()],
   );

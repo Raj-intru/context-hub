@@ -334,3 +334,10 @@ CREATE POLICY chunks_tenant ON chunks
 -- New tables need explicit grants (the earlier ALL TABLES grant ran before this).
 GRANT SELECT, INSERT, UPDATE, DELETE ON knowledge_sources TO lyra_app;
 GRANT SELECT, INSERT, UPDATE, DELETE ON chunks TO lyra_app;
+
+-- ===========================================================================
+-- Phase 2: per-user appearance preferences (theme + accent colour).
+-- Applied as ALTERs so existing databases upgrade in place.
+-- ===========================================================================
+ALTER TABLE users ADD COLUMN IF NOT EXISTS theme_pref  VARCHAR(10) NOT NULL DEFAULT 'system';
+ALTER TABLE users ADD COLUMN IF NOT EXISTS accent_pref VARCHAR(20) NOT NULL DEFAULT 'indigo';
