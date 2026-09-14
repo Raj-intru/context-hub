@@ -17,11 +17,12 @@ import { withUser, pool } from '../db.js';
 import { asyncHandler, HttpError } from '../middleware/errors.js';
 import { requireAuth } from '../middleware/auth.js';
 import { isSupervised } from '../domain/roles.js';
-import { moderate } from '../services/moderation.js';
+import { moderate, moderateImages } from '../services/moderation.js';
 import { complete, LlmError } from '../services/llm.js';
 import { buildMessages } from '../services/prompts.js';
 import { retrieve, formatContext } from '../services/retrieval.js';
 import { chooseModel } from '../services/router.js';
+import { resolveGateway } from '../services/gateway.js';
 import { LIBRARY_TENANT_ID } from '../domain/library.js';
 import { checkBudget, recordUsage } from '../services/tokens.js';
 import { encryptContent, decryptContent } from '../crypto/content.js';
@@ -42,15 +43,21 @@ router.post('/chat', asyncHandler(async (req, res) => {
     throw new HttpError(413, 'PROMPT_TOO_LONG', 'Prompt exceeds the maximum length');
   }
 
-  const supervised = isSupervised(user.role);
-  // OSS<->paid routing: cheap OSS for supervised/simple, frontier paid for
-  // complex adult prompts; an explicit client choice always wins.
-  const { model } = chooseModel({ role: user.role, prompt, requestedModel, supervised });
+  const attachments = validateAttachments(req.body?.attachments);
+  const needsVision = attachments.length > 0;
 
-  // 1. Moderation for supervised accounts (fails closed by default).
+  const supervised = isSupervised(user.role);
+  // Modality-aware OSS<->paid routing: a vision-capable model when an image is
+  // attached; cheap OSS for supervised/simple, frontier paid for complex adult
+  // prompts. Supervised accounts are LOCKED to the routed model (router.js).
+  const { model } = chooseModel({ role: user.role, prompt, requestedModel, supervised, needsVision });
+
+  // 1. Moderation for supervised accounts (fails closed by default) — both the
+  // text prompt AND any attached images.
   if (supervised) {
     const verdict = await moderate(prompt);
-    if (verdict.flagged) {
+    const imgVerdict = needsVision ? await moderateImages(attachments) : { flagged: false };
+    if (verdict.flagged || imgVerdict.flagged) {
       await withUser(user, (c) => recordUsage(c, {
         tenantId: user.tenant_id, groupId: user.group_id, userId: user.id,
         tokensUsed: 0, model: model || config.defaultModel, wasFlagged: true,
@@ -131,11 +138,14 @@ router.post('/chat', asyncHandler(async (req, res) => {
     citations = fmt.citations;
   }
 
-  // 4. Model call (no DB transaction held here).
-  const messages = buildMessages({ supervised, userPrompt: prompt, history: prep.history, grounding });
+  // 4. Model call (no DB transaction held here). Routed through the tenant's
+  // gateway ("universal key") so provider keys never live in this process, and
+  // a BYOK tenant can be mapped to its own in-region gateway.
+  const messages = buildMessages({ supervised, userPrompt: prompt, history: prep.history, grounding, attachments });
+  const { baseUrl, apiKey } = resolveGateway(user.tenant_id);
   let result;
   try {
-    result = await complete({ model, messages });
+    result = await complete({ model, messages, baseUrl, apiKey });
   } catch (err) {
     if (err instanceof LlmError) throw new HttpError(err.status, err.code, err.message);
     throw err;
@@ -224,6 +234,26 @@ router.get('/conversations/:id/messages', asyncHandler(async (req, res) => {
   if (out === null) throw new HttpError(404, 'CONVERSATION_NOT_FOUND', 'No such conversation');
   res.json({ messages: out });
 }));
+
+// Validate + normalize image attachments. Accepts [{ url }] where url is a
+// data: image URL (inline upload) or an https image URL. Caps the count; throws
+// a clean 4xx on anything malformed.
+function validateAttachments(raw) {
+  if (raw === undefined || raw === null) return [];
+  if (!Array.isArray(raw)) throw new HttpError(400, 'BAD_ATTACHMENTS', 'attachments must be an array');
+  if (raw.length > config.maxAttachments) {
+    throw new HttpError(413, 'TOO_MANY_ATTACHMENTS', `At most ${config.maxAttachments} images per message`);
+  }
+  return raw.map((a) => {
+    const url = typeof a === 'string' ? a : a?.url;
+    if (typeof url !== 'string' || !url) {
+      throw new HttpError(400, 'BAD_ATTACHMENTS', 'each attachment needs a url');
+    }
+    const ok = /^data:image\/(png|jpe?g|gif|webp);base64,/i.test(url) || /^https:\/\//i.test(url);
+    if (!ok) throw new HttpError(400, 'BAD_ATTACHMENTS', 'attachment url must be an https or data:image URL');
+    return { url };
+  });
+}
 
 function budgetMessage(reason) {
   switch (reason) {

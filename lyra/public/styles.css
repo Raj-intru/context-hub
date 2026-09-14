@@ -119,7 +119,12 @@ input, textarea, select { font-family: var(--body); }
 .citations { align-self: flex-start; max-width: 85%; margin-top: -4px; padding: 8px 12px; background: var(--brand-wash); border: 1px solid var(--line); border-radius: var(--radius-sm); font-size: 12px; }
 .citations-head { font-weight: 700; color: var(--brand-ink); text-transform: uppercase; letter-spacing: .04em; font-size: 10px; margin-bottom: 4px; }
 .citation { color: var(--muted); line-height: 1.5; overflow-wrap: anywhere; }
-.chat-input { display: flex; gap: 8px; padding: 12px; border-top: 1px solid var(--line); }
+.chat-input { display: flex; gap: 8px; padding: 12px; border-top: 1px solid var(--line); align-items: flex-end; }
+#attach-btn { display: grid; place-items: center; }
+.attach-preview { display: flex; flex-wrap: wrap; gap: 8px; padding: 0 12px 12px; }
+.attach-chip { position: relative; display: inline-flex; }
+.attach-chip img { width: 48px; height: 48px; object-fit: cover; border-radius: var(--radius-sm); border: 1px solid var(--line); }
+.attach-chip button { position: absolute; top: -6px; right: -6px; width: 18px; height: 18px; border-radius: 50%; border: none; background: var(--danger); color: #fff; font-size: 12px; line-height: 1; padding: 0; }
 .chat-input textarea { flex: 1; resize: none; padding: 10px 12px; border: 1px solid var(--line); border-radius: var(--radius-sm); background: var(--surface-2); color: var(--ink); font-size: 14px; }
 .chat-input select { border: 1px solid var(--line); border-radius: var(--radius-sm); background: var(--surface-2); color: var(--ink); padding: 0 8px; }
 #chat-msg { padding: 0 12px 10px; }

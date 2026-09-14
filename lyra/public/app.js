@@ -193,17 +193,46 @@ function addCitations(citations) {
   $('#messages').appendChild(wrap);
 }
 
-$('#new-chat').addEventListener('click', () => { state.conversationId = null; $('#messages').innerHTML = ''; setMsg('#chat-msg', ''); });
+// ---- Image attachments (multimodal) ----
+let pendingAttachments = [];
+function renderAttachPreview() {
+  const box = $('#attach-preview');
+  if (!pendingAttachments.length) { box.hidden = true; box.innerHTML = ''; return; }
+  box.hidden = false;
+  box.innerHTML = '';
+  pendingAttachments.forEach((a, i) => {
+    const chip = document.createElement('span');
+    chip.className = 'attach-chip';
+    chip.innerHTML = `<img alt="attachment" src="${a.url}" /><button type="button" aria-label="Remove image">×</button>`;
+    chip.querySelector('button').onclick = () => { pendingAttachments.splice(i, 1); renderAttachPreview(); };
+    box.appendChild(chip);
+  });
+}
+$('#attach-input').addEventListener('change', (e) => {
+  const file = e.target.files?.[0];
+  e.target.value = ''; // allow re-selecting the same file
+  if (!file) return;
+  if (pendingAttachments.length >= 4) { setMsg('#chat-msg', 'Up to 4 images per message', 'error'); return; }
+  const reader = new FileReader();
+  reader.onload = () => { pendingAttachments.push({ url: reader.result }); renderAttachPreview(); };
+  reader.readAsDataURL(file);
+});
+
+$('#new-chat').addEventListener('click', () => { state.conversationId = null; $('#messages').innerHTML = ''; setMsg('#chat-msg', ''); pendingAttachments = []; renderAttachPreview(); });
 
 $('#chat-form').addEventListener('submit', async (e) => {
   e.preventDefault();
   const prompt = $('#prompt').value.trim();
   if (!prompt) return;
+  const attachments = pendingAttachments.slice();
   const btn = e.target.querySelector('button');
-  addBubble('user', prompt); $('#prompt').value = ''; btn.disabled = true; setMsg('#chat-msg', 'Thinking…');
+  addBubble('user', prompt); $('#prompt').value = '';
+  pendingAttachments = []; renderAttachPreview();
+  btn.disabled = true; setMsg('#chat-msg', 'Thinking…');
   try {
     const res = await api('/chat', { method: 'POST', body: {
       prompt, model: $('#model-select').value, conversationId: state.conversationId,
+      attachments: attachments.length ? attachments : undefined,
     } });
     state.conversationId = res.conversationId;
     addBubble('assistant', res.reply, res.citations);

@@ -29,3 +29,21 @@ test('history is capped and sanitized', () => {
   // At most 20 history turns retained.
   assert.ok(msgs.length <= 1 + 20 + 1);
 });
+
+test('attachments build a multimodal user turn (content parts)', () => {
+  const msgs = buildMessages({
+    supervised: false, userPrompt: 'what is in this photo', history: [],
+    attachments: [{ url: 'https://example.com/hw.png' }],
+  });
+  const userTurn = msgs.find((m) => m.role === 'user');
+  assert.ok(Array.isArray(userTurn.content), 'user content should be an array of parts');
+  assert.equal(userTurn.content[0].type, 'text');
+  assert.equal(userTurn.content[1].type, 'image_url');
+  assert.equal(userTurn.content[1].image_url.url, 'https://example.com/hw.png');
+});
+
+test('no attachments keeps a plain string user turn', () => {
+  const msgs = buildMessages({ supervised: false, userPrompt: 'hi', history: [], attachments: [] });
+  const userTurn = msgs.find((m) => m.role === 'user');
+  assert.equal(typeof userTurn.content, 'string');
+});

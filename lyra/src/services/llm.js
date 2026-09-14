@@ -18,14 +18,18 @@ export class LlmError extends Error {
   }
 }
 
-export async function complete({ model, messages, fetchImpl = fetch, apiKey = config.openRouterApiKey }) {
+export async function complete({
+  model, messages, fetchImpl = fetch,
+  apiKey = config.gateway.apiKey,
+  baseUrl = config.gateway.baseUrl,
+}) {
   if (!apiKey) {
     throw new LlmError('AI provider is not configured', { status: 503, code: 'LLM_NOT_CONFIGURED' });
   }
 
   let resp;
   try {
-    resp = await fetchImpl('https://openrouter.ai/api/v1/chat/completions', {
+    resp = await fetchImpl(`${baseUrl.replace(/\/$/, '')}/chat/completions`, {
       method: 'POST',
       headers: {
         Authorization: `Bearer ${apiKey}`,

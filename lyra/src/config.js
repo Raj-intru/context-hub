@@ -52,12 +52,28 @@ export const config = {
   models: {
     simple: process.env.DEFAULT_MODEL_SIMPLE || 'meta-llama/llama-3.1-8b-instruct',
     complex: process.env.DEFAULT_MODEL_COMPLEX || 'anthropic/claude-3.5-sonnet',
+    // Vision-capable models chosen when a turn carries an image (e.g. a photo of
+    // homework). Both defaults are real, vision-capable slugs.
+    visionSimple: process.env.VISION_MODEL_SIMPLE || 'google/gemini-flash-1.5',
+    visionComplex: process.env.VISION_MODEL_COMPLEX || 'anthropic/claude-3.5-sonnet',
   },
   // Extra model ids an adult client is allowed to request explicitly, beyond the
   // routed simple/complex/default trio. Comma-separated. Supervised accounts are
   // never allowed to pick a model regardless of this list.
   modelAllowlist: (process.env.MODEL_ALLOWLIST || '')
     .split(',').map((s) => s.trim()).filter(Boolean),
+  // Image GENERATION is off by default (never enabled for minors regardless).
+  allowImageGeneration: process.env.ALLOW_IMAGE_GENERATION === 'true',
+  // Max image attachments accepted on a single chat turn.
+  maxAttachments: Number(process.env.MAX_ATTACHMENTS) || 4,
+  // The AI gateway ("universal key"): one virtual key -> real provider keys.
+  gateway: {
+    baseUrl: process.env.LYRA_GATEWAY_BASE_URL || 'https://openrouter.ai/api/v1',
+    apiKey: process.env.LYRA_GATEWAY_API_KEY || process.env.OPENROUTER_API_KEY || '',
+    // Per-tenant BYOK: tenantId -> { baseUrl, apiKey }. Env is a stopgap; use a
+    // secret manager in production (see docs/DEPLOY.md).
+    tenantGateways: parseJson('LYRA_TENANT_GATEWAYS', {}),
+  },
 
   // Which product this deployment is (drives branding/roles/platforms).
   product: process.env.PRODUCT === 'school' ? 'school' : (process.env.PRODUCT === 'family' ? 'family' : 'both'),

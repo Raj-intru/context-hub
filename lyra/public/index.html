@@ -89,9 +89,13 @@
               <option value="openai/gpt-4o-mini">GPT-4o mini</option>
               <option value="anthropic/claude-3.5-haiku">Claude Haiku</option>
             </select>
+            <label id="attach-btn" class="icon-btn" title="Attach an image" aria-label="Attach an image">📎
+              <input id="attach-input" type="file" accept="image/png,image/jpeg,image/gif,image/webp" hidden />
+            </label>
             <textarea id="prompt" rows="1" placeholder="Ask Lyra…" required></textarea>
             <button class="primary" type="submit">Send</button>
           </form>
+          <div id="attach-preview" class="attach-preview" hidden></div>
           <p id="chat-msg" class="msg" role="status" aria-live="polite"></p>
         </div>
       </div>

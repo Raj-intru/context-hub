@@ -17,6 +17,7 @@
 // classifier later without changing callers.
 
 import config from '../config.js';
+import { supportsModality } from './models.js';
 
 const COMPLEX_CUES = /\b(analy[sz]e|compare|contrast|evaluate|design|architect|prove|derive|debug|optimi[sz]e|trade[- ]?off|strategy|why|explain in detail)\b/i;
 
@@ -25,6 +26,8 @@ export function allowedModels() {
   return new Set([
     config.models.simple,
     config.models.complex,
+    config.models.visionSimple,
+    config.models.visionComplex,
     config.defaultModel,
     ...config.modelAllowlist,
   ].filter(Boolean));
@@ -35,26 +38,37 @@ export function isModelAllowed(model) {
 }
 
 /**
- * @returns {{ model: string, tier: 'supervised'|'client'|'simple'|'complex', locked?: boolean }}
+ * Pick a model for a request, honouring modality (text vs vision) and safety.
+ * @param {object} opts
+ * @param {boolean} [opts.needsVision]  the turn carries an image attachment
+ * @returns {{ model: string, tier: 'supervised'|'client'|'simple'|'complex', modality: 'text'|'vision', locked?: boolean }}
  */
-export function chooseModel({ role, prompt = '', requestedModel = null, supervised = null }) {
+export function chooseModel({ role, prompt = '', requestedModel = null, supervised = null, needsVision = false }) {
   const isSupervised = supervised ?? ['child', 'student'].includes(role);
+  const modality = needsVision ? 'vision' : 'text';
 
-  // Supervised accounts are locked to the routed (safe, cheap) model. Any
-  // client-requested model is ignored.
+  // Supervised accounts are locked to the routed (safe, cheap) model — a
+  // vision-capable one when an image is present. Client model choice is ignored.
   if (isSupervised) {
-    return { model: config.models.simple, tier: 'supervised', locked: true };
+    const model = needsVision ? config.models.visionSimple : config.models.simple;
+    return { model, tier: 'supervised', modality, locked: true };
   }
 
-  // Adults may pin a specific model, but only from the allowlist. An
-  // unrecognized id falls through to auto-routing rather than being proxied.
-  if (requestedModel && isModelAllowed(requestedModel)) {
-    return { model: requestedModel, tier: 'client' };
+  // Adults may pin a specific model from the allowlist — but only if it supports
+  // the required modality. Otherwise fall through to auto-routing.
+  if (requestedModel && isModelAllowed(requestedModel)
+      && (!needsVision || supportsModality(requestedModel, 'vision'))) {
+    return { model: requestedModel, tier: 'client', modality };
   }
 
   const words = prompt.trim().split(/\s+/).filter(Boolean).length;
   const complex = words > 60 || COMPLEX_CUES.test(prompt);
+  if (needsVision) {
+    return complex
+      ? { model: config.models.visionComplex, tier: 'complex', modality }
+      : { model: config.models.visionSimple, tier: 'simple', modality };
+  }
   return complex
-    ? { model: config.models.complex, tier: 'complex' }
-    : { model: config.models.simple, tier: 'simple' };
+    ? { model: config.models.complex, tier: 'complex', modality }
+    : { model: config.models.simple, tier: 'simple', modality };
 }

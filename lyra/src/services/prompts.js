@@ -47,8 +47,11 @@ const DIRECT_CORE = `You are a helpful, accurate assistant. Be clear and concise
  * @param {object=} opts.grounding  { sources, inScope } from RAG retrieval, or null.
  *   When present, the assistant is bound to answer ONLY from `sources` and to
  *   cite them; when `inScope` is false it must refuse (out-of-tenant-context).
+ * @param {Array=}  opts.attachments  image inputs [{ url }] for the latest user
+ *   turn. When present, the user message uses the OpenAI/OpenRouter multimodal
+ *   content-parts shape so a vision model can see the image.
  */
-export function buildMessages({ supervised, userPrompt, history = [], grounding = null }) {
+export function buildMessages({ supervised, userPrompt, history = [], grounding = null, attachments = [] }) {
   const safeHistory = Array.isArray(history)
     ? history
         .filter((m) => m && (m.role === 'user' || m.role === 'assistant') && typeof m.content === 'string')
@@ -59,9 +62,22 @@ export function buildMessages({ supervised, userPrompt, history = [], grounding 
 
   const messages = [{ role: 'system', content: core }];
   if (grounding) messages.push({ role: 'system', content: groundingInstruction(grounding) });
-  messages.push(...safeHistory, { role: 'user', content: userPrompt });
+  messages.push(...safeHistory, buildUserTurn(userPrompt, attachments));
   if (supervised) messages.push({ role: 'system', content: SUFFIX_REMINDER });
   return messages;
+}
+
+// A plain text turn, or a multimodal content-parts turn when images are attached.
+function buildUserTurn(userPrompt, attachments) {
+  const imgs = Array.isArray(attachments) ? attachments.filter((a) => a && a.url) : [];
+  if (!imgs.length) return { role: 'user', content: userPrompt };
+  return {
+    role: 'user',
+    content: [
+      { type: 'text', text: userPrompt },
+      ...imgs.map((a) => ({ type: 'image_url', image_url: { url: a.url } })),
+    ],
+  };
 }
 
 function groundingInstruction({ sources, inScope }) {

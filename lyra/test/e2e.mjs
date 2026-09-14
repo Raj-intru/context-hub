@@ -18,13 +18,22 @@ globalThis.fetch = async (url, opts = {}) => {
   const u = String(url);
   if (u.includes('api.openai.com/v1/moderations')) {
     const body = JSON.parse(opts.body || '{}');
-    const flagged = /BADWORD/i.test(body.input || '');
-    return new Response(JSON.stringify({ results: [{ flagged, categories: {} }] }), { status: 200 });
+    // input is a string (text) or an array of parts (images). Flag on a marker.
+    const inputs = Array.isArray(body.input) ? body.input : [body.input];
+    const flagged = inputs.some((i) => {
+      const s = typeof i === 'string' ? i : (i?.image_url?.url || i?.text || '');
+      return /BADWORD|BADIMAGE/i.test(s);
+    });
+    const results = inputs.map(() => ({ flagged, categories: {} }));
+    return new Response(JSON.stringify({ results }), { status: 200 });
   }
   if (u.includes('openrouter.ai')) {
     const body = JSON.parse(opts.body || '{}');
     const lastUser = [...(body.messages || [])].reverse().find((m) => m.role === 'user');
-    const text = lastUser?.content || '';
+    // content is a string, or multimodal content-parts — extract the text part.
+    const raw = lastUser?.content;
+    const text = typeof raw === 'string' ? raw
+      : (Array.isArray(raw) ? (raw.find((p) => p.type === 'text')?.text || '') : '');
     // Simulate a model that emits unsafe OUTPUT for an otherwise-clean prompt,
     // so output moderation (not just input moderation) can be exercised.
     const content = /UNSAFE_OUTPUT/.test(text) ? 'here is a BADWORD reply' : `Echo(${text.slice(0, 20)})`;
@@ -99,6 +108,13 @@ try {
   assert.equal(msgs.json.messages[0].content, 'Hello Lyra');
   ok('encrypted history round-trips via API');
 
+  // 4b. An image attachment routes an adult turn to a vision-capable model.
+  const png = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR4nGNgYAAAAAMAASsJTYQAAAAASUVORK5CYII=';
+  const vision = await call('POST', '/api/chat', { token: parentToken, body: { prompt: 'what is in this image', attachments: [{ url: png }] } });
+  assert.equal(vision.status, 200, JSON.stringify(vision.json));
+  assert.match(vision.json.model, /gemini-flash|claude-3\.5-sonnet|gpt-4o/, 'should route to a vision model');
+  ok('adult image attachment routes to a vision-capable model');
+
   // 5a. Inviting a child WITHOUT consent is rejected
   const noConsent = await call('POST', '/api/invites', { token: parentToken, body: { firstName: 'Kid', role: 'child' } });
   assert.equal(noConsent.status, 400);
@@ -144,6 +160,18 @@ try {
   assert.equal(locked.status, 200, JSON.stringify(locked.json));
   assert.notEqual(locked.json.model, 'anthropic/claude-3.5-sonnet');
   ok('supervised model choice is ignored (locked to routed model)');
+
+  // 7d. A child may attach a (clean) image; it routes to the safe vision model.
+  const kidImg = await call('POST', '/api/chat', { token: childToken, body: { prompt: 'help me read this worksheet', attachments: [{ url: png }] } });
+  assert.equal(kidImg.status, 200, JSON.stringify(kidImg.json));
+  assert.match(kidImg.json.model, /gemini-flash/, 'supervised vision routes to the safe simple vision model');
+  ok('supervised child image routes to the safe vision model');
+
+  // 7e. An unsafe image attachment is blocked for a minor (image moderation).
+  const kidBadImg = await call('POST', '/api/chat', { token: childToken, body: { prompt: 'look at this', attachments: [{ url: 'https://example.com/BADIMAGE.png' }] } });
+  assert.equal(kidBadImg.status, 422);
+  assert.equal(kidBadImg.json.error, 'SAFETY_VIOLATION');
+  ok('supervised child unsafe IMAGE is blocked (422)');
 
   // 8. Child cannot read parent's conversation (ownership/RLS)
   const steal = await call('GET', `/api/conversations/${chat1.json.conversationId}/messages`, { token: childToken });

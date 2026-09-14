@@ -62,3 +62,53 @@ export async function moderate(promptText, {
     };
   }
 }
+
+// Moderate IMAGE inputs (e.g. a photo a student attaches). omni-moderation is
+// multimodal, so we send image_url parts. Same fail-closed contract as text:
+// if moderation is unavailable, a supervised image is BLOCKED by default. The
+// caller passes the same images it would send to the model.
+export async function moderateImages(images, {
+  fetchImpl = fetch,
+  apiKey = config.openAiApiKey,
+  failOpen = config.moderationFailOpen,
+} = {}) {
+  const urls = (Array.isArray(images) ? images : []).map((i) => i && i.url).filter(Boolean);
+  if (!urls.length) return { available: true, flagged: false, reason: 'no_images', categories: {} };
+  if (!apiKey) {
+    return {
+      available: false,
+      flagged: !failOpen,
+      reason: failOpen ? 'moderation_disabled_fail_open' : 'moderation_unavailable',
+      categories: {},
+    };
+  }
+
+  try {
+    const resp = await fetchImpl('https://api.openai.com/v1/moderations', {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${apiKey}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        model: 'omni-moderation-latest',
+        input: urls.map((url) => ({ type: 'image_url', image_url: { url } })),
+      }),
+    });
+    if (!resp.ok) {
+      return { available: false, flagged: !failOpen, reason: `moderation_http_${resp.status}`, categories: {} };
+    }
+    const data = await resp.json();
+    const results = data?.results;
+    if (!Array.isArray(results) || !results.length) {
+      return { available: false, flagged: !failOpen, reason: 'moderation_empty', categories: {} };
+    }
+    // Flag the batch if ANY image trips the filter.
+    const flaggedResult = results.find((r) => r?.flagged);
+    return {
+      available: true,
+      flagged: !!flaggedResult,
+      reason: flaggedResult ? 'flagged' : 'ok',
+      categories: flaggedResult?.categories || {},
+    };
+  } catch (err) {
+    return { available: false, flagged: !failOpen, reason: `moderation_error:${err.message}`, categories: {} };
+  }
+}

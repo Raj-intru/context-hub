@@ -49,13 +49,56 @@ vercel deploy --prod
 Two offerings = two Vercel projects from the same repo, each with `PRODUCT=family`
 or `PRODUCT=school` and its own domain.
 
-## Model routing (OSS ↔ paid)
+## Model routing (OSS ↔ paid) + the AI gateway
 
 `src/services/router.js` picks the cheap OSS model (`DEFAULT_MODEL_SIMPLE`) for
 supervised/simple turns and the frontier paid model (`DEFAULT_MODEL_COMPLEX`)
-for complex adult turns; both go through OpenRouter, and an explicit client
-model choice always wins. This is the gross-margin lever — tune the two model
-ids per your cost target.
+for complex adult turns. This is the gross-margin lever — tune the model ids per
+your cost target. Two safety rules override cost:
+
+- **Supervised accounts are locked to the routed model.** A child/student turn
+  always uses the routed simple (or simple-vision) model; a client-supplied
+  `model` is ignored. Adults may pin a model, but only one in the allowlist
+  (`MODEL_ALLOWLIST` plus the routed/vision defaults) — an unknown id falls back
+  to auto-routing instead of being proxied upstream.
+- **Modality-aware routing.** A turn that carries an image is routed to a
+  vision-capable model (`VISION_MODEL_SIMPLE` / `VISION_MODEL_COMPLEX`). The
+  model registry (`src/services/models.js`) records each model's modalities and
+  whether it is `supervisedSafe`; unknown ids are treated as text-only and
+  not-supervised-safe (fail closed).
+
+### The gateway ("universal key")
+
+Every model call goes through one gateway (`src/services/gateway.js`) so the app
+never holds Anthropic/OpenAI/Google keys directly:
+
+- **Family (default):** OpenRouter — one key, OSS + paid, automatic fallbacks.
+- **School (residency):** point `LYRA_GATEWAY_BASE_URL`/`LYRA_GATEWAY_API_KEY`
+  at a self-hosted OpenAI-compatible gateway (e.g. LiteLLM) running in-region.
+- **BYOK:** map a tenant to its own gateway/key via `LYRA_TENANT_GATEWAYS`
+  (JSON `tenantId -> {baseUrl, apiKey}`). **This env map is a stopgap** — in
+  production those keys belong in a secret manager / KMS, injected at runtime,
+  never committed and never logged.
+
+### Multimodal safety
+
+Image inputs from **supervised** users are moderated (`omni-moderation-latest`,
+image parts) with the same fail-closed contract as text: no moderation key →
+images are blocked for minors unless `MODERATION_FAIL_OPEN=true`. Image
+**generation** is off by default (`ALLOW_IMAGE_GENERATION=false`) and is never
+enabled for minors regardless of that flag. `MAX_ATTACHMENTS` caps images/turn.
+
+### Recommended models
+
+| Need | Model(s) | Notes |
+|------|----------|-------|
+| Cheap text + vision (default supervised/simple) | `google/gemini-flash-1.5` | low cost, multimodal |
+| OSS vision / OCR (homework photos, worksheets) | `qwen/qwen-2-vl-7b-instruct`, `meta-llama/llama-3.2-11b-vision-instruct` | self-hostable for residency |
+| Complex reasoning + vision (adult) | `anthropic/claude-3.5-sonnet`, `openai/gpt-4o` | frontier tier |
+| Newer Claude tier | Opus/Sonnet/Haiku (per your gateway's slugs) | add to `src/services/models.js` and set the routing envs |
+
+Add any model to the registry with its modalities + `supervisedSafe` flag, then
+point the routing envs at it — callers don't change.
 
 ## Required environment
 

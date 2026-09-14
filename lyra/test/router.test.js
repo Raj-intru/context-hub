@@ -5,7 +5,7 @@ import config from '../src/config.js';
 
 test('an adult may pin an allowlisted model', () => {
   const r = chooseModel({ role: 'adult', prompt: 'anything', requestedModel: config.models.complex });
-  assert.deepEqual(r, { model: config.models.complex, tier: 'client' });
+  assert.deepEqual(r, { model: config.models.complex, tier: 'client', modality: 'text' });
 });
 
 test('a non-allowlisted requested model falls back to auto-routing', () => {
@@ -42,4 +42,23 @@ test('a complex adult prompt escalates to the frontier paid model', () => {
 
 test('a reasoning cue escalates even a shorter prompt', () => {
   assert.equal(chooseModel({ role: 'adult', prompt: 'evaluate this design trade-off' }).tier, 'complex');
+});
+
+test('an image-bearing turn routes to a vision-capable model', () => {
+  const adult = chooseModel({ role: 'adult', prompt: 'what is in this photo', needsVision: true });
+  assert.equal(adult.modality, 'vision');
+  assert.equal(adult.model, config.models.visionSimple);
+
+  const kid = chooseModel({ role: 'student', prompt: 'help with this worksheet', needsVision: true });
+  assert.equal(kid.tier, 'supervised');
+  assert.equal(kid.model, config.models.visionSimple);
+});
+
+test('a pinned text-only model is ignored when vision is required', () => {
+  const r = chooseModel({
+    role: 'adult', prompt: 'what is in this photo', needsVision: true,
+    requestedModel: 'meta-llama/llama-3.1-8b-instruct', // text-only
+  });
+  assert.notEqual(r.tier, 'client');
+  assert.equal(r.modality, 'vision');
 });
