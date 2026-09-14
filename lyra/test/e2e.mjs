@@ -196,6 +196,60 @@ try {
   assert.equal(noauth.status, 401);
   ok('unauthenticated requests are rejected');
 
+  // ---- School: classroom-scoped teacher authority + dashboard scoping ----
+  const sSignup = await call('POST', '/api/auth/signup', { body: {
+    tenantType: 'school', tenantName: 'E2E School', firstName: 'Adminn',
+    email: `it_${uniq}@example.com`, password: 'supersecret',
+  } });
+  assert.equal(sSignup.status, 201, JSON.stringify(sSignup.json));
+  const itToken = sSignup.json.token;
+
+  // IT admin creates two classrooms.
+  const roomA = (await call('POST', '/api/groups', { token: itToken, body: { name: 'Room A' } })).json.group;
+  const roomB = (await call('POST', '/api/groups', { token: itToken, body: { name: 'Room B' } })).json.group;
+
+  // Helper: invite + accept, returns the new user's token.
+  const sConsent = await call('GET', '/api/consent-text', { token: itToken });
+  async function inviteAccept(body) {
+    const inv = await call('POST', '/api/invites', { token: itToken, body });
+    assert.equal(inv.status, 201, JSON.stringify(inv.json));
+    const acc = await call('POST', '/api/auth/accept-invite', { body: { token: inv.json.token, password: 'supersecret' } });
+    assert.equal(acc.status, 201, JSON.stringify(acc.json));
+    return acc.json.token;
+  }
+  const teacherToken = await inviteAccept({ email: `t_${uniq}@example.com`, firstName: 'Tia', role: 'teacher', groupId: roomA.id });
+  const stuA = await inviteAccept({ firstName: 'Sam', role: 'student', groupId: roomA.id, consentAcknowledged: true, consentVersion: sConsent.json.version });
+  await inviteAccept({ firstName: 'Bea', role: 'student', groupId: roomB.id, consentAcknowledged: true, consentVersion: sConsent.json.version });
+
+  // Teacher's roster is limited to their own classroom (Room A: teacher + Sam).
+  const tMembers = await call('GET', '/api/members', { token: teacherToken });
+  assert.equal(tMembers.status, 200, JSON.stringify(tMembers.json));
+  assert.ok(tMembers.json.members.every((m) => m.group_id === roomA.id), 'teacher sees only Room A');
+  assert.ok(!tMembers.json.members.some((m) => m.first_name === 'Bea'), 'teacher cannot see Room B student');
+  ok('teacher roster is scoped to their classroom');
+
+  // Teacher's dashboard is likewise scoped to Room A.
+  const tDash = await call('GET', '/api/dashboard', { token: teacherToken });
+  assert.equal(tDash.status, 200, JSON.stringify(tDash.json));
+  assert.ok(tDash.json.members.every((m) => m.group_id === roomA.id), 'dashboard scoped to Room A');
+  assert.ok(!tDash.json.members.some((m) => m.first_name === 'Bea'));
+  ok('teacher dashboard is scoped to their classroom');
+
+  // Teacher cannot manage a student in another classroom.
+  const bMembers = await call('GET', '/api/members', { token: itToken });
+  const bea = bMembers.json.members.find((m) => m.first_name === 'Bea');
+  const crossEdit = await call('PATCH', `/api/members/${bea.id}`, { token: teacherToken, body: { monthlyTokenCap: 1 } });
+  assert.equal(crossEdit.status, 403);
+  ok('teacher cannot manage a student outside their classroom (403)');
+
+  // Teacher cannot invite staff, and cannot touch billing.
+  const badInvite = await call('POST', '/api/invites', { token: teacherToken, body: { email: `x_${uniq}@e.com`, role: 'teacher' } });
+  assert.equal(badInvite.status, 403);
+  const teacherCheckout = await call('POST', '/api/billing/checkout', { token: teacherToken, body: { priceId: 'price_x' } });
+  assert.equal(teacherCheckout.status, 403);
+  ok('teacher cannot invite staff or manage billing (403)');
+
+  void stuA;
   console.log(`\nE2E: ${passed} checks passed ✅`);
 } catch (err) {
   console.error('\nE2E FAILED:', err);

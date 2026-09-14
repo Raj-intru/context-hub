@@ -7,12 +7,18 @@ import { Router } from 'express';
 import { withUser } from '../db.js';
 import { asyncHandler } from '../middleware/errors.js';
 import { requireAuth, requireAdmin } from '../middleware/auth.js';
+import { isClassroomScopedAdmin } from '../domain/roles.js';
 
 const router = Router();
 router.use(requireAuth, requireAdmin);
 
 router.get('/dashboard', asyncHandler(async (req, res) => {
   const tenantId = req.user.tenant_id;
+  // A classroom teacher sees only their own classroom's roster + usage, never
+  // the whole school. Tenant admins (parent_admin/it_admin) see everything.
+  const scoped = isClassroomScopedAdmin(req.user.role);
+  const groupId = scoped ? (req.user.group_id || null) : null;
+
   const data = await withUser(req.user, async (c) => {
     const tenant = await c.query(
       `SELECT type, name, plan_type, token_pool_limit, tokens_consumed_this_period, period_started_at
@@ -21,6 +27,9 @@ router.get('/dashboard', asyncHandler(async (req, res) => {
     );
 
     // Per-member aggregates for the current billing period. No message content.
+    // When $3 (scoped) is true, only rows in the teacher's own group $2 are
+    // returned — an unassigned teacher ($2 NULL) then sees nothing. When false
+    // (tenant admin), all tenant rows are returned.
     const members = await c.query(
       `SELECT u.id AS user_id, u.first_name, u.role, u.group_id, u.is_active,
               u.monthly_token_cap,
@@ -32,18 +41,19 @@ router.get('/dashboard', asyncHandler(async (req, res) => {
            ON e.user_id = u.id
           AND e.created_at >= (SELECT period_started_at FROM tenants WHERE id = $1)
         WHERE u.tenant_id = $1
+          AND ($3 = FALSE OR u.group_id = $2)
         GROUP BY u.id
         ORDER BY tokens_this_period DESC`,
-      [tenantId],
+      [tenantId, groupId, scoped],
     );
 
     const groups = await c.query(
       `SELECT id, name, token_allocation, tokens_consumed_this_period FROM groups
-        WHERE tenant_id = $1 ORDER BY name`,
-      [tenantId],
+        WHERE tenant_id = $1 AND ($3 = FALSE OR id = $2) ORDER BY name`,
+      [tenantId, groupId, scoped],
     );
 
-    return { tenant: tenant.rows[0], members: members.rows, groups: groups.rows };
+    return { tenant: tenant.rows[0], members: members.rows, groups: groups.rows, scopedToGroup: groupId };
   });
   res.json(data);
 }));
