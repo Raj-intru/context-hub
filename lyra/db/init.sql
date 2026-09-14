@@ -377,3 +377,19 @@ CREATE POLICY child_ctx_tenant ON child_context
   USING (tenant_id = app_current_tenant_id())
   WITH CHECK (tenant_id = app_current_tenant_id());
 GRANT SELECT, INSERT, UPDATE, DELETE ON child_context TO lyra_app;
+
+-- ===========================================================================
+-- Tier A: Stripe webhook idempotency.
+--
+-- Stripe delivers each event at-least-once and retries on any non-2xx, so the
+-- same event id can arrive multiple times. We record each processed event id
+-- and skip duplicates, so a replay never double-applies a quota reset or plan
+-- change. This table is NOT tenant-scoped (it keys on Stripe's global event id)
+-- and carries no user content, so it is not under RLS.
+-- ===========================================================================
+CREATE TABLE IF NOT EXISTS processed_webhook_events (
+    event_id   VARCHAR(255) PRIMARY KEY,   -- Stripe event id (evt_...)
+    type       VARCHAR(80),
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+GRANT SELECT, INSERT, DELETE ON processed_webhook_events TO lyra_app;

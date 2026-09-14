@@ -53,6 +53,11 @@ export const config = {
     simple: process.env.DEFAULT_MODEL_SIMPLE || 'meta-llama/llama-3.1-8b-instruct',
     complex: process.env.DEFAULT_MODEL_COMPLEX || 'anthropic/claude-3.5-sonnet',
   },
+  // Extra model ids an adult client is allowed to request explicitly, beyond the
+  // routed simple/complex/default trio. Comma-separated. Supervised accounts are
+  // never allowed to pick a model regardless of this list.
+  modelAllowlist: (process.env.MODEL_ALLOWLIST || '')
+    .split(',').map((s) => s.trim()).filter(Boolean),
 
   // Which product this deployment is (drives branding/roles/platforms).
   product: process.env.PRODUCT === 'school' ? 'school' : (process.env.PRODUCT === 'family' ? 'family' : 'both'),

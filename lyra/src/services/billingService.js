@@ -85,10 +85,8 @@ async function applySubscription(subscription) {
   return { handled: true, tenantId, newLimit };
 }
 
-/**
- * Handle a verified Stripe event. Returns a small summary for logging.
- */
-export async function handleEvent(event) {
+// Dispatch one verified event to its handler (no idempotency concern here).
+async function dispatchEvent(event) {
   const s = stripe();
   switch (event.type) {
     case 'checkout.session.completed': {
@@ -125,5 +123,29 @@ export async function handleEvent(event) {
     }
     default:
       return { handled: false, reason: `ignored:${event.type}` };
+  }
+}
+
+/**
+ * Handle a verified Stripe event exactly once. Stripe retries on any non-2xx,
+ * so we claim the event id first (ON CONFLICT DO NOTHING); a duplicate is a
+ * no-op. If dispatch throws, we release the claim so Stripe's retry can
+ * reprocess it — at-least-once delivery with duplicate suppression.
+ */
+export async function handleEvent(event) {
+  const claim = await pool.query(
+    `INSERT INTO processed_webhook_events (event_id, type) VALUES ($1, $2)
+     ON CONFLICT (event_id) DO NOTHING RETURNING event_id`,
+    [event.id, event.type],
+  );
+  if (!claim.rows.length) {
+    return { handled: false, reason: 'duplicate_event', eventId: event.id };
+  }
+  try {
+    return await dispatchEvent(event);
+  } catch (err) {
+    // Release the claim so a Stripe retry can reprocess this event.
+    await pool.query('DELETE FROM processed_webhook_events WHERE event_id = $1', [event.id]).catch(() => {});
+    throw err;
   }
 }

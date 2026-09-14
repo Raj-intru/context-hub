@@ -6,14 +6,15 @@ import { Router } from 'express';
 import express from 'express';
 import { pool } from '../db.js';
 import { asyncHandler, HttpError } from '../middleware/errors.js';
-import { requireAuth, requireAdmin } from '../middleware/auth.js';
+import { requireAuth, requireBilling } from '../middleware/auth.js';
 import { stripe, createCheckout, handleEvent } from '../services/billingService.js';
 import config from '../config.js';
 
 export const billingRouter = Router();
 
-// Admin starts a checkout to subscribe / change plan.
-billingRouter.post('/billing/checkout', requireAuth, requireAdmin, asyncHandler(async (req, res) => {
+// A billing admin (parent_admin / it_admin — never a classroom teacher) starts
+// a checkout to subscribe / change plan.
+billingRouter.post('/billing/checkout', requireAuth, requireBilling, asyncHandler(async (req, res) => {
   const { priceId, quantity } = req.body || {};
   const { rows } = await pool.query('SELECT * FROM tenants WHERE id = $1', [req.user.tenant_id]);
   if (!rows.length) throw new HttpError(404, 'TENANT_NOT_FOUND', 'Tenant missing');

@@ -141,10 +141,25 @@ router.post('/chat', asyncHandler(async (req, res) => {
     throw err;
   }
 
+  // 4b. OUTPUT moderation for supervised accounts (fails closed, like input).
+  // The model was already called, so we still account the token spend, but a
+  // flagged answer is never shown to or stored for a minor — it is replaced by
+  // a safe message and the event is marked flagged for the admin dashboard.
+  let replyContent = result.content;
+  let outputFlagged = false;
+  if (supervised) {
+    const outVerdict = await moderate(result.content);
+    if (outVerdict.flagged) {
+      outputFlagged = true;
+      replyContent = SAFE_OUTPUT_REPLACEMENT;
+      citations = [];
+    }
+  }
+
   // 5. Persist both turns (encrypted) + record usage atomically.
   await withUser(user, async (c) => {
     const encUser = await encryptContent(prompt);
-    const encAssistant = await encryptContent(result.content);
+    const encAssistant = await encryptContent(replyContent);
     await c.query(
       'INSERT INTO messages (conversation_id, sender_role, content, tokens_used) VALUES ($1, $2, $3, 0)',
       [prep.conversationId, 'user', encUser],
@@ -157,18 +172,24 @@ router.post('/chat', asyncHandler(async (req, res) => {
       [prep.conversationId, result.modelUsed]);
     await recordUsage(c, {
       tenantId: user.tenant_id, groupId: user.group_id, userId: user.id,
-      tokensUsed: result.tokensUsed, model: result.modelUsed, wasFlagged: false,
+      tokensUsed: result.tokensUsed, model: result.modelUsed, wasFlagged: outputFlagged,
     });
   });
 
   res.json({
     conversationId: prep.conversationId,
-    reply: result.content,
+    reply: replyContent,
+    blocked: outputFlagged || undefined,
     tokensUsed: result.tokensUsed,
     model: result.modelUsed,
     citations,
   });
 }));
+
+// Shown to a minor when the model's own answer trips the safety filter.
+const SAFE_OUTPUT_REPLACEMENT =
+  "I can't share that response. Let's keep things school-appropriate — try " +
+  'asking a different way, or check with a teacher or parent.';
 
 // List the caller's own conversations (RLS guarantees ownership).
 router.get('/conversations', asyncHandler(async (req, res) => {

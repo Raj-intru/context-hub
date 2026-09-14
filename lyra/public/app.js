@@ -26,12 +26,19 @@ function isAdmin() { return state.user && ADMIN_ROLES.includes(state.user.role);
 // ---- Appearance (per-user theme + accent) ----
 const ACCENTS = { indigo: '#4f46e5', violet: '#7c3aed', sky: '#0284c7', teal: '#0d9488',
   emerald: '#059669', rose: '#e11d48', amber: '#d97706', slate: '#475569' };
+// Foreground on each accent, chosen for WCAG AA (>=4.5:1) — mirrors
+// src/domain/theme.js ACCENT_ON. Dark ink on the mid accents, white on the dark.
+const DARK_INK = '#0d0d16';
+const ACCENT_ON = { indigo: '#ffffff', violet: '#ffffff', sky: DARK_INK, teal: DARK_INK,
+  emerald: DARK_INK, rose: '#ffffff', amber: DARK_INK, slate: '#ffffff' };
 
 function applyAppearance(theme, accent) {
   const root = document.documentElement;
   if (theme === 'light' || theme === 'dark') root.setAttribute('data-theme', theme);
   else root.removeAttribute('data-theme'); // system
   root.style.setProperty('--brand', ACCENTS[accent] || ACCENTS.indigo);
+  // Keep text-on-accent readable regardless of the chosen accent.
+  root.style.setProperty('--on-brand', ACCENT_ON[accent] || '#ffffff');
   try { localStorage.setItem('lyra_theme', theme); localStorage.setItem('lyra_accent', accent); } catch { /* private mode */ }
   state.theme = theme; state.accent = accent;
 }
@@ -157,12 +164,33 @@ async function openConversation(id) {
   loadConversations();
 }
 
-function addBubble(role, text) {
+function addBubble(role, text, citations) {
   const div = document.createElement('div');
   div.className = `bubble ${role === 'assistant' ? 'assistant' : 'user'}`;
   div.textContent = text;
   $('#messages').appendChild(div);
+  if (Array.isArray(citations) && citations.length) addCitations(citations);
   $('#messages').scrollTop = $('#messages').scrollHeight;
+}
+
+// Render the sources a grounded answer drew on, e.g. "[1] Fractions Unit · p2 — Room 3B".
+function addCitations(citations) {
+  const wrap = document.createElement('div');
+  wrap.className = 'citations';
+  wrap.setAttribute('aria-label', 'Sources');
+  const head = document.createElement('div');
+  head.className = 'citations-head';
+  head.textContent = 'Sources';
+  wrap.appendChild(head);
+  citations.forEach((c) => {
+    const row = document.createElement('div');
+    row.className = 'citation';
+    const label = c.label || c.source || `Source ${c.n}`;
+    const src = c.source && c.source !== c.label ? ` — ${c.source}` : '';
+    row.textContent = `[${c.n}] ${label}${src}`;
+    wrap.appendChild(row);
+  });
+  $('#messages').appendChild(wrap);
 }
 
 $('#new-chat').addEventListener('click', () => { state.conversationId = null; $('#messages').innerHTML = ''; setMsg('#chat-msg', ''); });
@@ -178,8 +206,9 @@ $('#chat-form').addEventListener('submit', async (e) => {
       prompt, model: $('#model-select').value, conversationId: state.conversationId,
     } });
     state.conversationId = res.conversationId;
-    addBubble('assistant', res.reply);
-    setMsg('#chat-msg', `${res.tokensUsed} tokens · ${res.model}`, 'ok');
+    addBubble('assistant', res.reply, res.citations);
+    const status = res.blocked ? 'blocked by safety filter' : `${res.tokensUsed} tokens · ${res.model}`;
+    setMsg('#chat-msg', status, res.blocked ? 'error' : 'ok');
     loadConversations();
   } catch (err) {
     setMsg('#chat-msg', err.message, 'error');

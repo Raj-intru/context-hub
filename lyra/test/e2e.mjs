@@ -24,9 +24,13 @@ globalThis.fetch = async (url, opts = {}) => {
   if (u.includes('openrouter.ai')) {
     const body = JSON.parse(opts.body || '{}');
     const lastUser = [...(body.messages || [])].reverse().find((m) => m.role === 'user');
+    const text = lastUser?.content || '';
+    // Simulate a model that emits unsafe OUTPUT for an otherwise-clean prompt,
+    // so output moderation (not just input moderation) can be exercised.
+    const content = /UNSAFE_OUTPUT/.test(text) ? 'here is a BADWORD reply' : `Echo(${text.slice(0, 20)})`;
     return new Response(JSON.stringify({
       model: body.model,
-      choices: [{ message: { content: `Echo(${lastUser?.content?.slice(0, 20) || ''})` } }],
+      choices: [{ message: { content } }],
       usage: { total_tokens: 123 },
     }), { status: 200 });
   }
@@ -126,6 +130,20 @@ try {
   assert.equal(bad.status, 422);
   assert.equal(bad.json.error, 'SAFETY_VIOLATION');
   ok('supervised child unsafe prompt is blocked (422)');
+
+  // 7b. Clean prompt, but the model emits unsafe OUTPUT -> the child gets a safe
+  // replacement (not the model text), flagged for the dashboard.
+  const badOut = await call('POST', '/api/chat', { token: childToken, body: { prompt: 'tell me about UNSAFE_OUTPUT topic' } });
+  assert.equal(badOut.status, 200, JSON.stringify(badOut.json));
+  assert.equal(badOut.json.blocked, true);
+  assert.doesNotMatch(badOut.json.reply, /BADWORD/, 'unsafe model output must not reach a minor');
+  ok('supervised child unsafe OUTPUT is replaced with a safe message');
+
+  // 7c. A supervised account cannot pin a paid model (routing is locked).
+  const locked = await call('POST', '/api/chat', { token: childToken, body: { prompt: 'hi', model: 'anthropic/claude-3.5-sonnet' } });
+  assert.equal(locked.status, 200, JSON.stringify(locked.json));
+  assert.notEqual(locked.json.model, 'anthropic/claude-3.5-sonnet');
+  ok('supervised model choice is ignored (locked to routed model)');
 
   // 8. Child cannot read parent's conversation (ownership/RLS)
   const steal = await call('GET', `/api/conversations/${chat1.json.conversationId}/messages`, { token: childToken });

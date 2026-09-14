@@ -9,7 +9,7 @@
 
 import { verifyToken } from '../crypto/token.js';
 import { query } from '../db.js';
-import { isAdmin } from '../domain/roles.js';
+import { isAdmin, canManageBilling } from '../domain/roles.js';
 import { HttpError } from './errors.js';
 
 export async function requireAuth(req, res, next) {
@@ -44,6 +44,15 @@ export async function requireAuth(req, res, next) {
 export function requireAdmin(req, res, next) {
   if (!req.user || !isAdmin(req.user.role)) {
     return next(new HttpError(403, 'FORBIDDEN', 'Admin role required'));
+  }
+  next();
+}
+
+// Billing management is a strict subset of admin: a classroom teacher is an
+// admin but must not touch the tenant's subscription. Only parent_admin/it_admin.
+export function requireBilling(req, res, next) {
+  if (!req.user || !canManageBilling(req.user.role)) {
+    return next(new HttpError(403, 'FORBIDDEN', 'Billing admin role required'));
   }
   next();
 }

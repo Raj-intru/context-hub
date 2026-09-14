@@ -1,16 +1,31 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { chooseModel } from '../src/services/router.js';
+import { chooseModel, isModelAllowed } from '../src/services/router.js';
 import config from '../src/config.js';
 
-test('an explicit client model choice always wins', () => {
-  const r = chooseModel({ role: 'adult', prompt: 'anything', requestedModel: 'openai/gpt-4o' });
-  assert.deepEqual(r, { model: 'openai/gpt-4o', tier: 'client' });
+test('an adult may pin an allowlisted model', () => {
+  const r = chooseModel({ role: 'adult', prompt: 'anything', requestedModel: config.models.complex });
+  assert.deepEqual(r, { model: config.models.complex, tier: 'client' });
 });
 
-test('supervised accounts route to the cheap OSS model', () => {
-  assert.equal(chooseModel({ role: 'child', prompt: 'help with fractions' }).model, config.models.simple);
-  assert.equal(chooseModel({ role: 'student', prompt: 'why is the sky blue' }).tier, 'simple');
+test('a non-allowlisted requested model falls back to auto-routing', () => {
+  const r = chooseModel({ role: 'adult', prompt: 'anything', requestedModel: 'openai/gpt-4o-unlisted' });
+  assert.notEqual(r.tier, 'client');
+  assert.ok(isModelAllowed(r.model));
+});
+
+test('supervised accounts are LOCKED to the cheap OSS model', () => {
+  const r = chooseModel({ role: 'child', prompt: 'help with fractions' });
+  assert.equal(r.model, config.models.simple);
+  assert.equal(r.tier, 'supervised');
+  assert.equal(r.locked, true);
+});
+
+test('a supervised account can NOT pin a different model', () => {
+  // Even an allowlisted paid model is ignored for a minor.
+  const r = chooseModel({ role: 'student', prompt: 'why is the sky blue', requestedModel: config.models.complex });
+  assert.equal(r.model, config.models.simple);
+  assert.equal(r.tier, 'supervised');
 });
 
 test('a short adult prompt uses the OSS model', () => {

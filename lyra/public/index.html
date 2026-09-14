@@ -82,7 +82,7 @@
           <ul id="convo-list"></ul>
         </aside>
         <div class="chat-main">
-          <div id="messages" class="messages"></div>
+          <div id="messages" class="messages" role="log" aria-live="polite" aria-label="Conversation" aria-relevant="additions"></div>
           <form id="chat-form" class="chat-input">
             <select id="model-select" title="Model">
               <option value="google/gemini-flash-1.5">Gemini Flash (fast)</option>
@@ -92,7 +92,7 @@
             <textarea id="prompt" rows="1" placeholder="Ask Lyra…" required></textarea>
             <button class="primary" type="submit">Send</button>
           </form>
-          <p id="chat-msg" class="msg"></p>
+          <p id="chat-msg" class="msg" role="status" aria-live="polite"></p>
         </div>
       </div>
     </section>

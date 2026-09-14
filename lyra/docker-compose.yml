@@ -4,7 +4,10 @@
 
 services:
   db:
-    image: postgres:16-alpine
+    # pgvector image (Postgres 16 + the `vector` extension) — the plain
+    # postgres image lacks pgvector, and db/init.sql runs `CREATE EXTENSION
+    # vector`, which would fail on boot without it.
+    image: pgvector/pgvector:pg16
     container_name: lyra_db
     restart: always
     environment:
@@ -46,6 +49,10 @@ services:
       OPENAI_API_KEY: ${OPENAI_API_KEY:-}
       MODERATION_FAIL_OPEN: ${MODERATION_FAIL_OPEN:-false}
       DEFAULT_MODEL: ${DEFAULT_MODEL:-google/gemini-flash-1.5}
+      DEFAULT_MODEL_SIMPLE: ${DEFAULT_MODEL_SIMPLE:-meta-llama/llama-3.1-8b-instruct}
+      DEFAULT_MODEL_COMPLEX: ${DEFAULT_MODEL_COMPLEX:-anthropic/claude-3.5-sonnet}
+      MODEL_ALLOWLIST: ${MODEL_ALLOWLIST:-}
+      CRON_SECRET: ${CRON_SECRET:-}
       STRIPE_SECRET_KEY: ${STRIPE_SECRET_KEY:-}
       STRIPE_WEBHOOK_SECRET: ${STRIPE_WEBHOOK_SECRET:-}
       STRIPE_PRICE_QUOTAS: ${STRIPE_PRICE_QUOTAS:-{}}

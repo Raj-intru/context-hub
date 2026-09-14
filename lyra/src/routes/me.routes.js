@@ -5,7 +5,7 @@ import { Router } from 'express';
 import { pool } from '../db.js';
 import { asyncHandler, HttpError } from '../middleware/errors.js';
 import { requireAuth } from '../middleware/auth.js';
-import { validatePreferences, allowedAccents, ACCENTS } from '../domain/theme.js';
+import { validatePreferences, allowedAccents, ACCENTS, accentOn } from '../domain/theme.js';
 
 const router = Router();
 router.use(requireAuth);
@@ -15,7 +15,7 @@ router.get('/me/appearance-options', (req, res) => {
   const names = allowedAccents(req.user.role);
   res.json({
     theme: req.user.theme_pref, accent: req.user.accent_pref,
-    accents: names.map((name) => ({ name, hex: ACCENTS[name] })),
+    accents: names.map((name) => ({ name, hex: ACCENTS[name], on: accentOn(name) })),
   });
 });
 

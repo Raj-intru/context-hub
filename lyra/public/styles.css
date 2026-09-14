@@ -116,6 +116,9 @@ input, textarea, select { font-family: var(--body); }
 .bubble { padding: 11px 14px; border-radius: 14px; max-width: 85%; white-space: pre-wrap; overflow-wrap: anywhere; font-size: 14px; line-height: 1.55; }
 .bubble.user { align-self: flex-end; background: var(--brand); color: var(--on-brand); border-bottom-right-radius: 5px; }
 .bubble.assistant { align-self: flex-start; background: var(--surface-2); border: 1px solid var(--line); border-bottom-left-radius: 5px; }
+.citations { align-self: flex-start; max-width: 85%; margin-top: -4px; padding: 8px 12px; background: var(--brand-wash); border: 1px solid var(--line); border-radius: var(--radius-sm); font-size: 12px; }
+.citations-head { font-weight: 700; color: var(--brand-ink); text-transform: uppercase; letter-spacing: .04em; font-size: 10px; margin-bottom: 4px; }
+.citation { color: var(--muted); line-height: 1.5; overflow-wrap: anywhere; }
 .chat-input { display: flex; gap: 8px; padding: 12px; border-top: 1px solid var(--line); }
 .chat-input textarea { flex: 1; resize: none; padding: 10px 12px; border: 1px solid var(--line); border-radius: var(--radius-sm); background: var(--surface-2); color: var(--ink); font-size: 14px; }
 .chat-input select { border: 1px solid var(--line); border-radius: var(--radius-sm); background: var(--surface-2); color: var(--ink); padding: 0 8px; }

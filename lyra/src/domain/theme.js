@@ -18,6 +18,27 @@ export const ACCENTS = {
   slate: '#475569',
 };
 
+// Foreground colour to place ON each accent (for the user bubble, primary
+// buttons, active tabs). Chosen per-accent so text-on-accent clears the WCAG
+// 2.1 AA 4.5:1 contrast ratio: dark ink on the lighter/mid accents, white on
+// the darker ones. (Computed from each accent's relative luminance; the mid
+// accents — sky/teal/emerald/amber — fail white text, so they take dark ink.)
+const DARK_INK = '#0d0d16';
+export const ACCENT_ON = {
+  indigo: '#ffffff',
+  violet: '#ffffff',
+  sky: DARK_INK,
+  teal: DARK_INK,
+  emerald: DARK_INK,
+  rose: '#ffffff',
+  amber: DARK_INK,
+  slate: '#ffffff',
+};
+
+export function accentOn(name) {
+  return ACCENT_ON[name] || '#ffffff';
+}
+
 // Friendly, bright subset offered to children/students.
 export const KID_ACCENTS = ['indigo', 'violet', 'sky', 'teal', 'emerald', 'rose'];
 
