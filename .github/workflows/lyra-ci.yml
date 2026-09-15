@@ -1,0 +1,64 @@
+name: Lyra CI
+
+on:
+  push:
+    branches: [main]
+    paths: ['lyra/**', '.github/workflows/lyra-ci.yml']
+  pull_request:
+    paths: ['lyra/**', '.github/workflows/lyra-ci.yml']
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: lyra
+
+    services:
+      postgres:
+        # pgvector image so `CREATE EXTENSION vector` in db/init.sql works.
+        image: pgvector/pgvector:pg16
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: lyra
+        ports: ['5432:5432']
+        options: >-
+          --health-cmd "pg_isready -U postgres"
+          --health-interval 5s --health-timeout 5s --health-retries 20
+
+    env:
+      # App connects as the least-privileged role so RLS is enforced.
+      DATABASE_URL: postgres://lyra_app:lyra_ci@localhost:5432/lyra
+      # Dev-only secrets for the test run (NODE_ENV stays development).
+      JWT_SECRET: ci-jwt-secret-at-least-32-characters-long!!
+      CONTENT_ENCRYPTION_KEY: "1111111111111111111111111111111111111111111111111111111111111111"
+      OPENROUTER_API_KEY: ci-openrouter
+      OPENAI_API_KEY: ci-openai
+      CRON_SECRET: ci-cron-secret
+
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - run: npm install
+
+      - name: Apply schema + create app role
+        run: node scripts/migrate.js
+        env:
+          MIGRATE_DATABASE_URL: postgres://postgres:postgres@localhost:5432/lyra
+          LYRA_APP_DB_PASSWORD: lyra_ci
+
+      - name: Unit tests
+        run: npm test
+
+      - name: End-to-end (auth, chat, moderation, roles, vision, data rights)
+        run: node test/e2e.mjs
+
+      - name: RAG isolation e2e
+        run: node test/rag-e2e.mjs
+
+      - name: Context-selection e2e
+        run: node test/context-e2e.mjs

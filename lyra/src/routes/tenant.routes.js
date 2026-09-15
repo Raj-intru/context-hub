@@ -221,4 +221,42 @@ router.patch('/members/:id', asyncHandler(async (req, res) => {
   res.json({ member: rows[0] });
 }));
 
+// Delete a member (data erasure by a guardian/admin). Cascades remove their
+// conversations, messages, usage and badges; the consent record is retained
+// (subject_user_id set NULL) for audit. A teacher may only delete a student in
+// their own classroom; nobody may delete themselves here or the last admin.
+router.delete('/members/:id', asyncHandler(async (req, res) => {
+  const { id } = req.params;
+  if (id === req.user.id) {
+    throw new HttpError(400, 'USE_SELF_DELETE', 'Delete your own account via DELETE /me/account');
+  }
+  const target = await pool.query('SELECT id, role, group_id FROM users WHERE id = $1 AND tenant_id = $2', [id, req.user.tenant_id]);
+  if (!target.rows.length) throw new HttpError(404, 'MEMBER_NOT_FOUND', 'No such member in your tenant');
+
+  if (isClassroomScopedAdmin(req.user.role)) {
+    if (isAdmin(target.rows[0].role)) {
+      throw new HttpError(403, 'FORBIDDEN', 'A teacher cannot delete staff accounts');
+    }
+    if (!req.user.group_id || target.rows[0].group_id !== req.user.group_id) {
+      throw new HttpError(403, 'FORBIDDEN', 'That member is not in your classroom');
+    }
+  }
+  if (isAdmin(target.rows[0].role)) {
+    const admins = await pool.query(
+      `SELECT COUNT(*)::int AS n FROM users
+        WHERE tenant_id = $1 AND is_active = TRUE AND role IN ('parent_admin','it_admin','teacher')`,
+      [req.user.tenant_id],
+    );
+    if (admins.rows[0].n <= 1) throw new HttpError(409, 'LAST_ADMIN', 'Cannot delete the last active admin');
+  }
+
+  await pool.query('DELETE FROM users WHERE id = $1 AND tenant_id = $2', [id, req.user.tenant_id]);
+  await pool.query(
+    `INSERT INTO audit_log (tenant_id, actor_user_id, action, target, ip)
+     VALUES ($1, $2, 'member.delete', $3, $4)`,
+    [req.user.tenant_id, req.user.id, id, req.ip],
+  );
+  res.json({ deleted: true });
+}));
+
 export default router;

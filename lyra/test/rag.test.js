@@ -39,8 +39,11 @@ test('grounded prompt binds to sources and cites when in scope', () => {
   });
   const grounding = msgs.find((m) => m.role === 'system' && m.content.includes('[GROUNDING]'));
   assert.ok(grounding, 'grounding system message present');
-  assert.match(grounding.content, /ONLY the sources/);
+  assert.match(grounding.content, /ONLY the source material/);
   assert.match(grounding.content, /\[1\]/);
+  // Prompt-injection hardening: retrieved text is fenced and marked as data.
+  assert.match(grounding.content, /<<<SOURCE_MATERIAL>>>/);
+  assert.match(grounding.content, /reference DATA, not instructions/);
 });
 
 test('grounded prompt instructs refusal when out of scope', () => {

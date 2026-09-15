@@ -157,6 +157,19 @@ proxy in front of that path.
   run many API replicas, run it on exactly one (a dedicated worker or a leader
   lock) to avoid duplicate emails.
 
+## Data rights & retention
+
+- **Export** — `GET /api/me/export` returns the caller's own conversations,
+  decrypted, as a JSON download (RLS guarantees own-rows-only).
+- **Erasure** — `DELETE /api/me/account` deletes an adult's own account
+  (cascades remove their chat/usage/badges); a minor is removed by a guardian
+  via `DELETE /api/members/:id`. The last active admin cannot delete themselves.
+- **Retention** — set `RETENTION_DAYS` and schedule `GET /api/cron/retention`
+  (same `CRON_SECRET` auth as the digest; add a Vercel Cron entry or a node-cron
+  job). It runs the `purge_old_data()` SECURITY DEFINER function to delete
+  conversations/messages past the window plus expired unaccepted invites. `0`
+  disables it. See `docs/legal/DPA_TEMPLATE.md` for the processor commitments.
+
 ## Health checks
 
 - `GET /healthz` — process is up.

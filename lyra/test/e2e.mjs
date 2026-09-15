@@ -11,6 +11,7 @@ process.env.OPENROUTER_API_KEY = 'test-openrouter';
 process.env.OPENAI_API_KEY = 'test-openai';
 process.env.JWT_SECRET = 'test-jwt-secret-at-least-32-characters-long!!';
 process.env.CONTENT_ENCRYPTION_KEY = '11'.repeat(32);
+process.env.CRON_SECRET = 'test-cron-secret';
 
 // --- Stub external providers -------------------------------------------------
 const realFetch = globalThis.fetch;
@@ -195,6 +196,39 @@ try {
   const noauth = await call('POST', '/api/chat', { body: { prompt: 'hi' } });
   assert.equal(noauth.status, 401);
   ok('unauthenticated requests are rejected');
+
+  // ---- Data-subject rights: export + erasure ----
+  const exp = await call('GET', '/api/me/export', { token: parentToken });
+  assert.equal(exp.status, 200, JSON.stringify(exp.json));
+  assert.ok(Array.isArray(exp.json.conversations) && exp.json.conversations.length >= 1);
+  assert.ok(exp.json.conversations.some((c) => c.messages.some((m) => m.content === 'Hello Lyra')),
+    'export includes decrypted own content');
+  ok('a user can export their own data (decrypted)');
+
+  // A supervised minor cannot self-delete (guardian action).
+  const kidSelfDel = await call('DELETE', '/api/me/account', { token: childToken });
+  assert.equal(kidSelfDel.status, 403);
+  ok('a minor cannot self-delete (guardian required)');
+
+  // The last admin cannot self-delete and orphan the tenant.
+  const parentSelfDel = await call('DELETE', '/api/me/account', { token: parentToken });
+  assert.equal(parentSelfDel.status, 409);
+  ok('the last admin cannot self-delete');
+
+  // A guardian/admin can erase a member; the account is then gone (session 401).
+  const delKid = await call('DELETE', `/api/members/${accept.json.user.id}`, { token: parentToken });
+  assert.equal(delKid.status, 200, JSON.stringify(delKid.json));
+  const afterDel = await call('GET', '/api/auth/me', { token: childToken });
+  assert.equal(afterDel.status, 401);
+  ok('an admin can erase a member (data deleted, session invalidated)');
+
+  // Retention cron is authenticated and a no-op when disabled (RETENTION_DAYS=0).
+  const retNoAuth = await call('GET', '/api/cron/retention');
+  assert.equal(retNoAuth.status, 401);
+  const ret = await call('GET', '/api/cron/retention', { token: 'test-cron-secret' });
+  assert.equal(ret.status, 200, JSON.stringify(ret.json));
+  assert.equal(ret.json.skipped, 'retention_disabled');
+  ok('retention cron requires the secret and no-ops when disabled');
 
   // ---- School: classroom-scoped teacher authority + dashboard scoping ----
   const sSignup = await call('POST', '/api/auth/signup', { body: {

@@ -16,6 +16,7 @@ import { Router } from 'express';
 import { withUser, pool } from '../db.js';
 import { asyncHandler, HttpError } from '../middleware/errors.js';
 import { requireAuth } from '../middleware/auth.js';
+import { rateLimit } from '../middleware/rateLimit.js';
 import { isSupervised } from '../domain/roles.js';
 import { moderate, moderateImages } from '../services/moderation.js';
 import { complete, LlmError } from '../services/llm.js';
@@ -33,7 +34,9 @@ router.use(requireAuth);
 
 const HISTORY_LIMIT = 20;
 
-router.post('/chat', asyncHandler(async (req, res) => {
+const chatLimiter = rateLimit({ windowMs: 60_000, max: 30, keyPrefix: 'chat' });
+
+router.post('/chat', chatLimiter, asyncHandler(async (req, res) => {
   const user = req.user;
   const { prompt, model: requestedModel, conversationId } = req.body || {};
   if (typeof prompt !== 'string' || !prompt.trim()) {

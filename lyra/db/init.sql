@@ -393,3 +393,47 @@ CREATE TABLE IF NOT EXISTS processed_webhook_events (
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 GRANT SELECT, INSERT, DELETE ON processed_webhook_events TO lyra_app;
+
+-- ===========================================================================
+-- Tier B: defense-in-depth RLS + data-retention purge.
+-- ===========================================================================
+
+-- FORCE RLS so policies apply even to the table OWNER. The app already connects
+-- as the non-owner lyra_app (so RLS bites regardless), but this closes the gap
+-- if someone ever points the app at an owner/superuser connection by mistake.
+-- Roles with the BYPASSRLS attribute (e.g. the migration owner) still bypass —
+-- which is what lets the SECURITY DEFINER purge function below run.
+ALTER TABLE conversations     FORCE ROW LEVEL SECURITY;
+ALTER TABLE messages          FORCE ROW LEVEL SECURITY;
+ALTER TABLE usage_events      FORCE ROW LEVEL SECURITY;
+ALTER TABLE knowledge_sources FORCE ROW LEVEL SECURITY;
+ALTER TABLE chunks            FORCE ROW LEVEL SECURITY;
+ALTER TABLE child_context     FORCE ROW LEVEL SECURITY;
+
+-- Retention purge. Deleting old chat spans every user's rows, which per-user RLS
+-- deliberately hides from the app role — so this runs as a SECURITY DEFINER
+-- function owned by the schema owner (a BYPASSRLS role). It deletes conversations
+-- (messages cascade) untouched for `retention_days`, plus expired unaccepted
+-- invites. retention_days <= 0 (or NULL) is a no-op. The app role may only
+-- EXECUTE it; it cannot read across tenants any other way.
+CREATE OR REPLACE FUNCTION purge_old_data(retention_days INT)
+RETURNS TABLE(deleted_conversations BIGINT, deleted_invites BIGINT)
+LANGUAGE plpgsql SECURITY DEFINER
+SET search_path = public
+AS $$
+DECLARE conv BIGINT := 0; inv BIGINT := 0;
+BEGIN
+  IF retention_days IS NULL OR retention_days <= 0 THEN
+    RETURN QUERY SELECT 0::bigint, 0::bigint;
+    RETURN;
+  END IF;
+  DELETE FROM conversations WHERE updated_at < NOW() - make_interval(days => retention_days);
+  GET DIAGNOSTICS conv = ROW_COUNT;  -- messages cascade via FK
+  DELETE FROM invites WHERE accepted_at IS NULL AND expires_at < NOW();
+  GET DIAGNOSTICS inv = ROW_COUNT;
+  RETURN QUERY SELECT conv, inv;
+END;
+$$;
+-- Only the app role may call it; nobody else needs to.
+REVOKE ALL ON FUNCTION purge_old_data(INT) FROM PUBLIC;
+GRANT EXECUTE ON FUNCTION purge_old_data(INT) TO lyra_app;

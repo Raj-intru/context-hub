@@ -91,6 +91,10 @@ export const config = {
   },
   enableWeeklyDigest: process.env.ENABLE_WEEKLY_DIGEST === 'true',
 
+  // Data retention: purge conversations/messages untouched for this many days
+  // (0 = retain indefinitely). Enforced by the retention cron / purge_old_data.
+  retentionDays: Number(process.env.RETENTION_DAYS) || 0,
+
   // Session token lifetime.
   sessionTtlSeconds: 60 * 60 * 12, // 12h
 };

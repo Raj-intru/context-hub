@@ -51,14 +51,20 @@ export function createApp() {
 
   // API routes (with targeted rate limits on the sensitive ones).
   app.use('/api/auth', rateLimit({ windowMs: 60_000, max: 20, keyPrefix: 'auth' }), authRoutes);
-  app.use('/api', rateLimit({ windowMs: 60_000, max: 30, keyPrefix: 'chat' }), chatRoutes);
+  // Cron routes authenticate with a shared secret (not a user session), so they
+  // MUST be mounted before the routers that apply requireAuth to all of /api/*
+  // — otherwise those would 401 the cron requests first.
+  app.use('/api', cronRoutes);
+  // The chat rate limit is applied inside chatRoutes on the POST /chat endpoint
+  // only — mounting it on the whole /api prefix here would throttle every API
+  // call, not just model calls.
+  app.use('/api', chatRoutes);
   app.use('/api', tenantRoutes);
   app.use('/api', dashboardRoutes);
   app.use('/api', badgeRoutes);
   app.use('/api', knowledgeRoutes);
   app.use('/api', meRoutes);
   app.use('/api', contextRoutes);
-  app.use('/api', cronRoutes);
   app.use('/api', billingRouter);
 
   // Static web client.
