@@ -1,0 +1,109 @@
+name: Agentic Bank CI
+
+on:
+  push:
+    branches: [main]
+    paths: ['agentic-bank/**', '.github/workflows/agentic-bank-ci.yml']
+  pull_request:
+    paths: ['agentic-bank/**', '.github/workflows/agentic-bank-ci.yml']
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: agentic-bank
+
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: bankowner
+          POSTGRES_PASSWORD: bankowner
+          POSTGRES_DB: agentic_bank
+        ports: ['5432:5432']
+        options: >-
+          --health-cmd "pg_isready -U bankowner"
+          --health-interval 5s --health-timeout 5s --health-retries 20
+
+    env:
+      DATABASE_URL: postgres://bankowner:bankowner@localhost:5432/agentic_bank
+      BANK_TIMEZONE: Australia/Sydney
+      # The offline planner: the whole suite runs without a model provider, so
+      # a CI failure is a real failure rather than a sampling artefact.
+      AGENT_PROVIDER: stub
+
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - run: npm install
+
+      # The kernel, the ledger, the policy engine and the agent wiring, all
+      # against the in-memory store: no database, no network, no model.
+      - name: Unit tests
+        run: npm test
+
+      - name: End-to-end journeys (in-memory store)
+        run: npm run test:e2e
+
+      - name: Apply schema
+        run: npm run migrate
+
+      - name: The database's own invariants
+        run: |
+          set -o pipefail
+          fails=0
+          expect_error() {
+            local label="$1"; shift
+            if psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -q -f "$1" >/dev/null 2>"$1.err"; then
+              echo "FAIL  $label — the database accepted it"
+              fails=$((fails+1))
+            else
+              echo "ok    $label — $(head -1 "$1.err" | cut -c1-110)"
+            fi
+          }
+
+          cat > /tmp/fixture.sql <<'SQL'
+          insert into entities (id, data) values ('ent_ci', '{"id":"ent_ci","segment":"consumer","status":"active"}');
+          insert into accounts (id, data) values
+           ('acc_ci_a', '{"id":"acc_ci_a","entityId":"ent_ci","type":"liability","currency":"AUD","status":"active","purpose":"customer_deposit"}'),
+           ('acc_ci_b', '{"id":"acc_ci_b","entityId":"ent_ci","type":"asset","currency":"AUD","status":"active","purpose":"clearing"}');
+          insert into transactions (id, data) values ('txn_ci', '{"id":"txn_ci","idempotencyKey":"ci-1","type":"transfer","valueDate":"2026-11-05","postedAt":"2026-11-05T00:00:00.000Z"}');
+          insert into postings (id, data) values
+           ('pst_ci_1', '{"id":"pst_ci_1","transactionId":"txn_ci","accountId":"acc_ci_a","direction":"debit","amount":{"amount":"1000","currency":"AUD","scale":2},"valueDate":"2026-11-05"}'),
+           ('pst_ci_2', '{"id":"pst_ci_2","transactionId":"txn_ci","accountId":"acc_ci_b","direction":"credit","amount":{"amount":"1000","currency":"AUD","scale":2},"valueDate":"2026-11-05"}');
+          SQL
+          psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -q -f /tmp/fixture.sql
+
+          cat > /tmp/unbalanced.sql <<'SQL'
+          begin;
+          insert into transactions (id, data) values ('txn_bad', '{"id":"txn_bad","idempotencyKey":"ci-bad","type":"transfer","valueDate":"2026-11-05","postedAt":"2026-11-05T00:00:00.000Z"}');
+          insert into postings (id, data) values
+           ('pst_bad_1', '{"id":"pst_bad_1","transactionId":"txn_bad","accountId":"acc_ci_a","direction":"debit","amount":{"amount":"1000","currency":"AUD","scale":2},"valueDate":"2026-11-05"}'),
+           ('pst_bad_2', '{"id":"pst_bad_2","transactionId":"txn_bad","accountId":"acc_ci_b","direction":"credit","amount":{"amount":"1100","currency":"AUD","scale":2},"valueDate":"2026-11-05"}');
+          commit;
+          SQL
+          echo "update postings set data = data || '{\"narrative\":\"tampered\"}' where id = 'pst_ci_1';" > /tmp/update.sql
+          echo "delete from postings where id = 'pst_ci_1';" > /tmp/delete.sql
+          echo "insert into postings (id,data) values ('pst_neg','{\"id\":\"pst_neg\",\"transactionId\":\"txn_ci\",\"accountId\":\"acc_ci_a\",\"direction\":\"debit\",\"amount\":{\"amount\":\"-5\",\"currency\":\"AUD\",\"scale\":2},\"valueDate\":\"2026-11-05\"}');" > /tmp/negative.sql
+          echo "insert into transactions (id,data) values ('txn_dup','{\"id\":\"txn_dup\",\"idempotencyKey\":\"ci-1\",\"type\":\"transfer\"}');" > /tmp/duplicate.sql
+
+          expect_error "an unbalanced transaction fails at COMMIT" /tmp/unbalanced.sql
+          expect_error "postings cannot be updated"                /tmp/update.sql
+          expect_error "postings cannot be deleted"                /tmp/delete.sql
+          expect_error "a posting amount must be positive"          /tmp/negative.sql
+          expect_error "an idempotency key is unique"               /tmp/duplicate.sql
+
+          psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -q -c "truncate postings, transactions, accounts, balances, entities cascade;"
+          exit $fails
+
+      - name: End-to-end journeys (PostgreSQL store)
+        run: npm run test:e2e
+        env:
+          STORE: postgres
+
+      - name: Demo transcript runs clean
+        run: npm run demo
