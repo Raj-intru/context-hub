@@ -3,6 +3,8 @@
 **App:** [name or working title]
 **Learner:** [name]
 **Started:** [date]
+**Agent:** [Claude Code / Codex / Cursor / Gemini CLI / other]
+**Model:** [your coach sets this — check your agent's model screen if unsure]
 **Live address:** not yet live
 
 ## Where we are
@@ -30,3 +32,4 @@ Newest first. Three bullets or fewer per session.
 - [what changed]
 - [what the learner decided]
 - **Before next session:** [the one thing to do]
+- **Next session:** type `/start`

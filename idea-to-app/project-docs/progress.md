@@ -3,6 +3,8 @@
 **App:** not named yet
 **Learner:** Rajesh
 **Started:** 2026-11-01
+**Agent:** Claude Code
+**Model:** [set by your coach — check `/model` if unsure]
 **Live address:** not yet live
 
 ## Where we are
@@ -33,3 +35,4 @@ Newest first. Three bullets or fewer per session.
   templates, and the seven slash commands.
 - No app idea captured yet, so no gate is signed and Stage 0 has not started.
 - **Before next session:** none — Stage 0 starts with one question in the chat.
+- **Next session:** type `/start`

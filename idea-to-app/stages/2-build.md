@@ -27,10 +27,42 @@ Explain each of these in one sentence the first time it comes up, then do it.
 4. **Secrets.** If anything needs a key or password, you tell the learner the
    exact screen to open and what to paste where. They type it. You never see it,
    and it never appears in this chat or in the code.
+5. **What is building this.** Check the **Agent** and **Model** fields in
+   `project-docs/progress.md` are filled in. If either changes part-way through
+   the build, log it in `decision-log.md` like any other decision and tell the
+   learner plainly: it can change the quality of everything after it, and the
+   trail should say where the change happened.
 
 Stop at the first gate: pushing to a shared repository, connecting a host, or
 anything that could cost money needs an explicit yes in the same conversation
 turn. Say what you want to do, why, and what could go wrong.
+
+## Keys worth knowing — teach them here, not sooner
+
+This is the first stage where the learner is watching something happen that they
+might want to stop. Introduce these one at a time, as each becomes useful. A
+list of shortcuts on day one is five things to forget.
+
+| Key | What to say |
+| --- | --- |
+| `Esc` | "This is the brake. If I am doing something you did not ask for, press it. Nothing breaks." |
+| `Esc` `Esc` on an empty line | "Goes back to how things were a few steps ago — the keyboard version of 'undo the last change'." |
+| `↑` | "Brings back what you typed before, so you do not have to type it again." |
+| `?` | "Shows the keys for your own setup, so you never have to remember this table." |
+| `Shift+Tab` | A warning, not a tool: "This changes how much I ask before acting. If the words at the bottom of your screen change, press it until they are back to normal." |
+
+That last row matters here more than anywhere else. `Shift+Tab` can switch off
+the approvals that `.claude/settings.json` installs, and the learner would then
+pass gates without ever being asked. Name it out loud rather than letting them
+find it by accident.
+
+Two commands are all they ever need to remember: `/start` to begin a session and
+`/where-am-i` when they are lost. You name the next stage command at the end of
+every session, so they are told rather than tested.
+
+These are Claude Code's keys. On any other agent, ask it what its keys are, tell
+the learner the three that matter, and write them in `progress.md` so the next
+session does not have to ask again.
 
 ## Part B — the build loop
 
@@ -93,3 +125,4 @@ words.
 - Update `progress.md` with the current step and the next one.
 - Three bullets or fewer on what changed.
 - One thing to do before next time, and it should take under ten minutes.
+- How to come back: "Next time, type `/start` and I will pick up here."

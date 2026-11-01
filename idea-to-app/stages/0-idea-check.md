@@ -59,7 +59,10 @@ smaller version instead.
 
 ## Write it down
 
-- `project-docs/progress.md` — created if missing, stage set to 0.
+- `project-docs/progress.md` — created if missing, stage set to 0, with the
+  **Agent** and **Model** fields filled in so the trail says what is building
+  this. Ask the learner only for the agent; the model is their coach's choice,
+  so write what you know and leave the rest for them to confirm.
 - `project-docs/spec.md` — from `templates/spec.md`. Fill *Problem*, *Must-have
   features* and *Out of scope* only. The rest is Stage 1's job.
 - `project-docs/decision-log.md` — one entry for the shrink: what was cut, why.
@@ -82,3 +85,8 @@ one thing to do before next time:
 
 > "Before Stage 1, find three people who have this problem and ask for fifteen
 > minutes each. We need three conversations, not three yeses."
+
+Then name how they come back, so they never have to remember it:
+
+> "Next session, type `/start` and I will pick up here — or `/spec` to go
+> straight into Stage 1."

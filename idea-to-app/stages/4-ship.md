@@ -92,3 +92,9 @@ version 2, and the next three things the learner might do. Then tell them the
 truth plainly:
 
 > "You decided every part of this. The code is the easy half."
+
+Then tell them how to come back, because this is the session they will be
+furthest from when they next need it:
+
+> "Any time you want to change something, open this folder and type `/start`.
+> If you have forgotten where anything lives, `/where-am-i` will tell you."

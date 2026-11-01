@@ -12,10 +12,19 @@ The method lives in plain files, so it works with whichever agent you prefer.
 | --- | --- | --- |
 | **Claude Code** (used in our demos) | Reads `CLAUDE.md`, which includes `AGENTS.md` | Type a command: `/start`, `/idea-check`, `/spec`, `/build`, `/trust-check`, `/ship`, `/where-am-i` |
 | **Codex, Cursor and other agents that read `AGENTS.md`** | Reads `AGENTS.md` automatically | Type the stage in plain words, for example "Start Stage 1: spec" |
+| **Gemini CLI, GitHub Copilot** | Reads `GEMINI.md` or `.github/copilot-instructions.md`, which point at `AGENTS.md` | Same as above |
 | **Any other agent** | Paste this as your first message: "Read AGENTS.md in this folder and follow it exactly." | Same as above |
 
 Whichever you pick, the rules, stages, gates and templates are identical, and
 your coach can help you in the same way.
+
+**One setting to check if you are not using Claude Code.** Claude Code is set up
+in `.claude/settings.json` to ask you before it deploys, pushes or deletes
+anything. Every other agent has its own approval setting, and this kit cannot
+set it for them. So on your first session, ask your agent to confirm it will
+check with you before it acts, and leave it in its "ask me first" mode. The
+rules in `AGENTS.md` tell your agent to ask you; that setting is what makes it
+stop.
 
 ## Getting started
 
@@ -30,6 +39,13 @@ You will need two free accounts before Week 2: a code-hosting account (for
 example GitHub) and a hosting account (for example Vercel). The agent will walk
 you through creating them. **Always type passwords and keys yourself, never
 into the chat.**
+
+**You do not choose a model.** Your agent runs on an AI model, and which one is
+a setup choice your coach makes once — you never need to change it. If you are
+paying for the agent yourself, ask your coach what it costs before Week 2, the
+same as any other paid service. If it does change part-way through, your agent
+writes that in `project-docs/decision-log.md`, because it can change the quality
+of everything that comes after it.
 
 ## The five stages
 
@@ -47,6 +63,8 @@ into the chat.**
 | --- | --- |
 | `AGENTS.md` | The agent's operating instructions: rules, gates, guardrails |
 | `CLAUDE.md` | Connects Claude Code to `AGENTS.md` |
+| `GEMINI.md` | Connects Gemini CLI to `AGENTS.md` |
+| `.github/copilot-instructions.md` | Connects GitHub Copilot to `AGENTS.md` |
 | `stages/` | One playbook per stage |
 | `templates/` | Starting points for your project trail |
 | `project-docs/` | Created as you go: your progress, spec, decisions, checks, Trust Card |

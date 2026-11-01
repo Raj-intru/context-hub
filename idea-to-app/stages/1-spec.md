@@ -96,3 +96,5 @@ Three bullets on what changed, then what to do next:
 > "Before Stage 2 you need two free accounts: one for code (GitHub) and one for
 > hosting (Vercel). Sign up with your email, and keep every password in your
 > password manager — never type one into this chat."
+
+> "Next session, type `/start` — or `/build` to go straight into Stage 2."

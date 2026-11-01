@@ -94,3 +94,5 @@ Three bullets, then:
 
 > "Before Stage 4, line up five people who will actually use this in the first
 > week, and send them nothing yet."
+
+> "Next session, type `/start` — or `/ship` to go straight into Stage 4."
