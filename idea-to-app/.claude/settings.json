@@ -1,0 +1,35 @@
+{
+  "$schema": "https://json.schemastore.org/claude-code-settings.json",
+  "permissions": {
+    "ask": [
+      "Bash(git push:*)",
+      "Bash(gh pr create:*)",
+      "Bash(vercel:*)",
+      "Bash(npx vercel:*)",
+      "Bash(netlify:*)",
+      "Bash(npm publish:*)",
+      "Bash(rm:*)",
+      "Bash(rmdir:*)",
+      "Bash(git reset --hard:*)",
+      "Bash(git clean:*)",
+      "Bash(git checkout -- :*)",
+      "Bash(psql:*)",
+      "Bash(sqlite3:*)",
+      "Bash(prisma migrate reset:*)",
+      "Bash(npx prisma migrate reset:*)",
+      "Bash(supabase db reset:*)"
+    ],
+    "allow": [
+      "Bash(git status:*)",
+      "Bash(git diff:*)",
+      "Bash(git log:*)",
+      "Bash(git add:*)",
+      "Bash(git commit:*)",
+      "Bash(npm install:*)",
+      "Bash(npm run build:*)",
+      "Bash(npm run dev:*)",
+      "Bash(npm test:*)",
+      "Bash(npx playwright test:*)"
+    ]
+  }
+}
