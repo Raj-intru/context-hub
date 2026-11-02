@@ -13,6 +13,7 @@ The method lives in plain files, so it works with whichever agent you prefer.
 | **Claude Code** (used in our demos) | Reads `CLAUDE.md`, which includes `AGENTS.md` | Type a command: `/start`, `/idea-check`, `/spec`, `/build`, `/trust-check`, `/ship`, `/where-am-i` |
 | **Codex, Cursor and other agents that read `AGENTS.md`** | Reads `AGENTS.md` automatically | Type the stage in plain words, for example "Start Stage 1: spec" |
 | **Gemini CLI, GitHub Copilot** | Reads `GEMINI.md` or `.github/copilot-instructions.md`, which point at `AGENTS.md` | Same as above |
+| **Grok Build** (xAI's terminal agent) | Reads `AGENTS.md`, and `CLAUDE.md` too — open this folder so the kit's rules win over anything above it | Same as above |
 | **Any other agent** | Paste this as your first message: "Read AGENTS.md in this folder and follow it exactly." | Same as above |
 
 Whichever you pick, the rules, stages, gates and templates are identical, and
@@ -69,6 +70,7 @@ of everything that comes after it.
 | `templates/` | Starting points for your project trail |
 | `project-docs/` | Created as you go: your progress, spec, decisions, checks, Trust Card |
 | `.claude/` | Claude Code commands and safety settings |
+| `demo/` | How to run the method as a live demo, the worked example it builds, and the security track for taking it to a business |
 
 ## Your project trail
 
