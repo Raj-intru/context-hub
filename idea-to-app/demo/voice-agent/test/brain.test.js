@@ -1,8 +1,8 @@
 // One test per acceptance check, named after the check.
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { reply, INITIAL, findPhone, findName, findDay, spaced } from '../src/brain.js';
-import { business } from '../src/business.js';
+import { reply, INITIAL, findPhone, findName, findDay, spaced } from '../public/lib/brain.js';
+import { business } from '../public/lib/business.js';
 
 const say = (text, state = INITIAL) => reply(state, text, business);
 

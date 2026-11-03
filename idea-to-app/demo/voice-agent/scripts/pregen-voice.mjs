@@ -5,7 +5,9 @@ import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { fixedLines } from '../src/lines.js';
 import { synthesize, configuredProvider, providerNames } from '../src/tts.js';
-import { voiceFile } from '../server.js';
+import { createHash } from 'node:crypto';
+
+const voiceFile = (text) => `${createHash('sha1').update(text).digest('hex').slice(0, 16)}.mp3`;
 
 const ROOT = fileURLToPath(new URL('..', import.meta.url));
 const VOICE = join(ROOT, 'public', 'voice');

@@ -1,7 +1,7 @@
 // The microphone half. Everything it decides lives in /src/brain.js, which is
 // the same file the tests drive — so this layer stays thin enough to trust.
-import { reply, INITIAL } from '/src/brain.js';
-import { business } from '/src/business.js';
+import { reply, INITIAL } from './lib/brain.js';
+import { business } from './lib/business.js';
 
 const params = new URLSearchParams(location.search);
 const SILENCE_MS = Number(params.get('silence') || 5000);

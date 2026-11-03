@@ -3,7 +3,7 @@
 // no latency, no network, no key needed while you are standing in front of
 // people. Lines with a name or number in them are not here — they fall back to
 // the browser voice, or get synthesised once and cached on first use.
-import { business } from './business.js';
+import { business } from '../public/lib/business.js';
 
 export const fixedLines = [
   business.hours,
