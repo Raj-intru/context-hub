@@ -28,6 +28,13 @@ Only facts verified by running checks go here.
 | Access check (people see only their own data) | [Pass / not applicable] | [date] |
 | Input validation | [Pass] | [date] |
 | Accessibility basics (labels, contrast, phone layout) | [Pass / known gaps: …] | [date] |
+| Security guardrails (all ten rules) | [10 of 10 checked, n fixed] | [date] |
+| Speed budgets on a phone | [Pass — first screen 2.1s] | [date] |
+| Spending caps and alerts | [Pass — see Ops Card] | [date] |
+| Rate limits on anything public | [Pass] | [date] |
+
+**What it costs, how fast it is, and how to stop it:** see
+`project-docs/ops-card.md`, last reviewed [date].
 
 ## Known limits
 

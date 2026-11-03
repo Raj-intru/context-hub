@@ -14,6 +14,8 @@ changing it safely.
    - The Trust Card matches the current app
    - Secrets are set in the host's settings, entered by the learner
    - The privacy notice is visible in the app
+   - Every paid service has a spending cap or a budget alert
+   - The shutdown steps in the Ops Card have been tested
    - The learner has done the explain-back for the whole app
 
 3. **Ask before going live.** "I am ready to publish your app at [address]. Once
@@ -24,7 +26,9 @@ changing it safely.
    the result. If anything fails, roll back and say so.
 
 5. **Basic tracking.** Set up simple, privacy-friendly usage and error tracking
-   (only with approval) and explain what each number means.
+   (only with approval) and explain what each number means. Turn on the host's
+   own budget alerts at the same time, so cost and errors reach the learner the
+   same way, and update `project-docs/ops-card.md` with the live numbers.
 
 6. **Custom domain (optional).** If wanted, guide the learner to buy and connect
    it themselves. They make the purchase.
@@ -38,11 +42,18 @@ changing it safely.
    ship, update the change notes and Trust Card. Tell them this is how every
    future change should happen.
 
-9. **Demo-day summary.** Write a one-page project summary: problem, solution,
+9. **The monthly ops habit.** Read `guardrails/cost.md` and
+   `guardrails/performance.md` again, then walk the learner through one Ops Card
+   review end to end: open each dashboard, read out the numbers, write them in,
+   compare them against the budgets, and act on anything over. Tell them to do
+   this on the same day each month, and that `/ops-check` runs it for them. An
+   app nobody reviews is how a small bill becomes a big one.
+
+10. **Demo-day summary.** Write a one-page project summary: problem, solution,
    screenshots described in words, Trust Card highlights, what users said, and
    what is next.
 
-10. **Ask for the gate.** "Your app is live at [URL], [n] people have used it,
+11. **Ask for the gate.** "Your app is live at [URL], [n] people have used it,
     and your Trust Card is up to date. Reply **yes** to complete the programme."
     Record it in `progress.md`.
 
@@ -51,5 +62,6 @@ changing it safely.
 - [ ] Live URL works, checked after deploy
 - [ ] Five real users and their feedback summarised
 - [ ] Final Trust Card matches the live app
+- [ ] Ops Card reviewed once with the learner; caps, alerts and shutdown confirmed
 - [ ] One live change completed through the safe change loop
 - [ ] Gate 4 approved

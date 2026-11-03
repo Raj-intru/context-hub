@@ -10,7 +10,7 @@ The method lives in plain files, so it works with whichever agent you prefer.
 
 | Agent | How it picks up the method | How you start a stage |
 | --- | --- | --- |
-| **Claude Code** (used in our demos) | Reads `CLAUDE.md`, which includes `AGENTS.md` | Type a command: `/start`, `/idea-check`, `/spec`, `/build`, `/trust-check`, `/ship`, `/where-am-i` |
+| **Claude Code** (used in our demos) | Reads `CLAUDE.md`, which includes `AGENTS.md` | Type a command: `/start`, `/idea-check`, `/spec`, `/build`, `/trust-check`, `/ship`, `/where-am-i`, `/ops-check` |
 | **Codex, Cursor and other agents that read `AGENTS.md`** | Reads `AGENTS.md` automatically | Type the stage in plain words, for example "Start Stage 1: spec" |
 | **Any other agent** | Paste this as your first message: "Read AGENTS.md in this folder and follow it exactly." | Same as above |
 
@@ -41,6 +41,23 @@ into the chat.**
 | 3. Trust | Tests, a break-it session, a data review, and your Trust Card | Every check passes and you sign the card |
 | 4. Ship | Go live, get five real users, learn to change it safely | Your app is live and in use |
 
+## The four guardrails
+
+Four things decide whether an app is safe to hand to real people. They are
+checked inside the stages above, not bolted on at the end.
+
+| Guardrail | The question it answers |
+| --- | --- |
+| **Security** | What is the worst a stranger could do with this? |
+| **Scale** | What happens when a hundred people arrive at once? |
+| **Performance** | Is it still quick on a phone, on mobile data? |
+| **Cost** | What does this cost me this month, and what is the worst it could cost me? |
+
+The cost one matters most at the start. Nobody is harmed by an app that is a
+little slow; people are harmed by a bill that arrives a month after launch. Your
+agent sets a spending cap and an alert on every service before it builds
+anything, and your Ops Card keeps the numbers in front of you.
+
 ## What is in this kit
 
 | Path | What it is |
@@ -48,8 +65,9 @@ into the chat.**
 | `AGENTS.md` | The agent's operating instructions: rules, gates, guardrails |
 | `CLAUDE.md` | Connects Claude Code to `AGENTS.md` |
 | `stages/` | One playbook per stage |
+| `guardrails/` | The four guardrails: security, scale, performance, cost |
 | `templates/` | Starting points for your project trail |
-| `project-docs/` | Created as you go: your progress, spec, decisions, checks, Trust Card |
+| `project-docs/` | Created as you go: your progress, spec, decisions, checks, Trust Card, Ops Card |
 | `.claude/` | Claude Code commands and safety settings |
 
 ## Your project trail
@@ -63,4 +81,5 @@ them exactly what the app does, why, and how it was checked.
 - If you don't understand something, ask "Explain that more simply."
 - If something breaks, say "Undo the last change."
 - If you want something new, ask "Is that in my spec?" before building it.
+- Once a month, type `/ops-check` and read out the numbers it asks for.
 - Nothing goes live until you say yes.

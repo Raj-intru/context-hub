@@ -30,6 +30,16 @@
 | --- | --- | --- | --- |
 | [Booking] | [name, email, date, time] | [Yes: name, email] | [to confirm the booking] |
 
+## Limits and budgets
+
+| | |
+| --- | --- |
+| **People in month one** | [n] |
+| **Busiest hour** | [n at once] |
+| **First screen usable in** | [3 seconds, on a phone on mobile data] |
+| **Costs to run** | [nothing, on free plans — or the service and its price per use] |
+| **Worst case in a month** | [the amount, and what would cause it] |
+
 ## Out of scope / Version 2
 
 - [Feature left out, and why]

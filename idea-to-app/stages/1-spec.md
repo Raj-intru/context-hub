@@ -27,6 +27,9 @@
    - Screen list: each screen in one line
    - Data the app keeps, in plain English ("a booking: name, email, date, time"),
      with a note on anything personal
+   - Limits and budgets: people expected in month one and in the busiest hour,
+     how fast each screen must feel, and what it may cost to run
+     (`guardrails/scale.md`, `guardrails/performance.md`, `guardrails/cost.md`)
    - Out of scope / Version 2 list
    - Open questions
 
@@ -47,5 +50,6 @@
 
 - [ ] Interview notes from three real people summarised
 - [ ] `spec.md` complete with no open questions left
+- [ ] Limits and budgets agreed and written into `spec.md`
 - [ ] Acceptance checks written for every feature
 - [ ] Explain-back done and Gate 1 approved

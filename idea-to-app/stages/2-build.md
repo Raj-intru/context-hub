@@ -20,9 +20,15 @@
    connect their own code-hosting and hosting accounts so every change gets a
    preview link. They enter their own credentials.
 
+   Before the first screen, read `guardrails/security.md` and set up: secrets as
+   environment settings the learner types in themselves, a spending cap or budget
+   alert on every service (`guardrails/cost.md`), and the shutdown steps written
+   into `project-docs/ops-card.md` from `templates/ops-card.md`.
+
 4. **Build in small steps.** One screen or one behaviour at a time, in the
    order of the core flow. After each step:
    - Run all tests
+   - Check it on a phone-sized screen against the budget in `spec.md`
    - Commit with a plain-English message
    - Add an entry to `project-docs/change-notes.md`: what changed, why, how to check it
    - Tell the learner: "Open your preview link, do X, and tell me what you see."
@@ -50,5 +56,6 @@
 
 - [ ] Every must-have feature works on the preview link
 - [ ] Tests exist for every acceptance check written so far, and pass
+- [ ] Spending caps and shutdown steps were in place before anything was built
 - [ ] `change-notes.md` has an entry for every change
 - [ ] Learner demoed the flow unaided; Gate 2 approved

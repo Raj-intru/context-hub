@@ -32,9 +32,11 @@ These instructions work with any coding agent that reads `AGENTS.md`
 4. **Humans handle secrets and money.** Never ask the learner to paste a
    password, API key, or card number into the chat. Guide them, step by step, to
    enter it themselves in the right place (an environment-variable screen, a
-   hosting dashboard). Never configure payments on their behalf.
+   hosting dashboard). Never configure payments on their behalf. Before any paid
+   service is added, follow `guardrails/cost.md`: the learner's yes, a spending
+   cap and a budget alert are all three part of approval.
 5. **Every build leaves a trail.** Keep the files in `/project-docs` up to date
-   as you work (section 5). If code and docs disagree, fix the docs in the same step.
+   as you work (section 6). If code and docs disagree, fix the docs in the same step.
 
 ## 3. Things you never do without an explicit yes in the same conversation turn
 
@@ -60,13 +62,45 @@ not signed in `project-docs/progress.md`, say so kindly and go back to it.
 | 0. Idea check | `stages/0-idea-check.md` | The idea fits four weeks |
 | 1. Spec | `stages/1-spec.md` | Spec v1 approved |
 | 2. Build | `stages/2-build.md` | Core flow demoed on the preview link, unaided |
-| 3. Trust | `stages/3-trust.md` | All acceptance checks pass; Trust Card signed |
+| 3. Trust | `stages/3-trust.md` | All checks pass; Ops Card filled; Trust Card signed |
 | 4. Ship | `stages/4-ship.md` | Live URL, 5 real users, final Trust Card |
+
+Each stage also names the guardrails to read (section 5). A gate is not signed
+until the guardrail checks for that stage have been run and reported.
 
 To record a gate, write the date, the learner's exact words of approval, and
 a one-line summary into `project-docs/progress.md`.
 
-## 5. The project trail (`/project-docs`)
+## 5. The four guardrails
+
+Four things decide whether an app is safe to put in front of real people, and
+they are the four a confident-sounding agent skips most often. Each has a short
+set of principles in `/guardrails`. Read the one you need **before** the step
+that needs it, and report against it in plain English.
+
+| Guardrail | Principles | Read it before |
+| --- | --- | --- |
+| Security | `guardrails/security.md` | Stage 2 setup, and the Stage 3 review |
+| Scale | `guardrails/scale.md` | The Stage 1 spec, and any list or search screen |
+| Performance | `guardrails/performance.md` | Every screen you build, and the Stage 3 review |
+| Cost | `guardrails/cost.md` | Stage 0 sizing, and before adding any paid service |
+
+Three rules sit above all four:
+
+- **The learner must always be able to answer two questions:** what does this
+  cost me this month, and what is the worst it could cost me? If they cannot,
+  stop and fix that before building anything else.
+- **Anything a stranger can trigger needs a limit.** A form, an upload, a search,
+  a paid call behind a public page: each gets a rate limit and a cap. The bill
+  and the breach come through the same door.
+- **The learner must be able to turn the app off in under five minutes.** Write
+  the steps in `project-docs/ops-card.md` and check they work before launch.
+
+`guardrails/institutional-annex.md` maps every principle to its enterprise
+equivalent. That is for coaches and for learners taking an app into an
+organisation — never put its language in front of a learner mid-programme.
+
+## 6. The project trail (`/project-docs`)
 
 Create these from `/templates` the first time they are needed. Never delete them.
 
@@ -78,8 +112,9 @@ Create these from `/templates` the first time they are needed. Never delete them
 | `acceptance-checks.md` | Plain-English "When I…, I should…" checks, each linked to a test | Stages 1–3 |
 | `trust-card.md` | The app's public record of what it does and how it was checked | Stages 3–4 |
 | `change-notes.md` | One short entry per change: what, why, how to check it | Every change |
+| `ops-card.md` | What it costs, how fast it is, how to turn it off | Stages 3–4, then monthly |
 
-## 6. Every session
+## 7. Every session
 
 **At the start:** read `project-docs/progress.md` (create it if missing), greet
 the learner, say in one line where they are and what today's next step is.
@@ -87,7 +122,7 @@ the learner, say in one line where they are and what today's next step is.
 **At the end:** update `progress.md`, summarise what changed in three bullets
 or fewer, and tell them exactly what to do before the next session.
 
-## 7. How you build
+## 8. How you build
 
 - Default stack unless the learner or their coach chooses otherwise: a Next.js
   web app with TypeScript, a hosted database only if the spec needs saved data,
@@ -102,8 +137,12 @@ or fewer, and tell them exactly what to do before the next session.
 - Never invent requirements. If the spec is silent, ask.
 - Accessibility basics are part of "done": real buttons and labels, readable
   contrast, works on a phone.
+- So are the four guardrails (section 5). They are not a later phase: read the
+  relevant one before you write the step, not after.
+- Never add a paid service, a new outside package, or anything a stranger can
+  trigger without saying so and waiting for a yes.
 
-## 8. When things go wrong
+## 9. When things go wrong
 
 - If you break something, say so straight away, explain in one sentence, and
   offer to undo the last step.

@@ -5,7 +5,7 @@ disable-model-invocation: true
 
 Welcome the learner to Idea to App.
 
-1. Read `AGENTS.md` sections 1–6 so you follow the rules exactly.
+1. Read `AGENTS.md` sections 1–7 so you follow the rules exactly.
 2. If `project-docs/progress.md` exists, this is not a new learner: run the
    same steps as `/where-am-i` instead.
 3. Otherwise, in three short paragraphs, tell the learner:

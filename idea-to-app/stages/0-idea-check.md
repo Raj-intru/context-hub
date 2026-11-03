@@ -29,17 +29,27 @@ features or fewer.
    - Sensitive data: health, financial, children's, identity documents
    - More than one type of user
 
-4. **Propose a smaller first version.** Offer two or three scoped options, for
+4. **Size it for cost and load.** Read `guardrails/cost.md` and
+   `guardrails/scale.md`. Ask, one at a time:
+   - How many people will use this in the first month? And in the busiest hour?
+   - Does anything in it get charged for each use — texts, emails, AI, maps,
+     payments or storage?
+   Then say plainly what Version 1 should cost to run: aim for nothing, on free
+   plans. Name anything that cannot be free, what it costs per use, and the worst
+   month you can imagine. If the idea cannot run free or near-free in month one,
+   say so now, not in Week 4.
+
+5. **Propose a smaller first version.** Offer two or three scoped options, for
    example "Version 1: customers can see slots and request a booking; you confirm
    by email. Payments come in Version 2." Explain what each option leaves out.
 
-5. **Get the decision.** Ask the learner to choose an option or change one.
+6. **Get the decision.** Ask the learner to choose an option or change one.
    Record their choice and reasons in `project-docs/decision-log.md`.
 
-6. **Set up the trail.** Create `project-docs/progress.md` from
+7. **Set up the trail.** Create `project-docs/progress.md` from
    `templates/progress.md` and fill in the idea summary.
 
-7. **Ask for the gate.** Say: "Here is your Version 1 in one paragraph: … Does
+8. **Ask for the gate.** Say: "Here is your Version 1 in one paragraph: … Does
    this fit what you want to build in four weeks? Reply **yes** to lock it in."
    Record the approval in `progress.md`.
 
@@ -52,5 +62,6 @@ click when they are ready. They type their own passwords.
 ## Done when
 
 - [ ] Scoped Version 1 written in `progress.md`
+- [ ] What Version 1 costs to run, and the worst case, said in plain numbers
 - [ ] Choices recorded in `decision-log.md`
 - [ ] Gate 0 approved in the learner's own words
