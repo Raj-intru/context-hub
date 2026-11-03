@@ -1,6 +1,6 @@
 # Acceptance checks
 
-**Last full run:** 2026-11-03 — 15 of 15 passing in 1.8 seconds (`npm test`)
+**Last full run:** 2026-11-03 — 26 of 26 passing in about 3 seconds (`npm test`)
 
 ## Core flow
 
@@ -20,6 +20,15 @@
 | — | give a number that is too short | be asked again, not booked | `brain.test.js` | pass |
 | — | say "never mind" halfway through | have the booking dropped | `brain.test.js` | pass |
 | — | say nothing at all | get "I didn't catch that", not a crash | `brain.test.js` | pass |
+
+## What it costs and how it is going
+
+| # | When I… | I should… | Test | Status |
+| --- | --- | --- | --- | --- |
+| 8 | open the dashboard | see what each booking cost, and this month's spend against my cap | `ui.test.mjs` dashboard | pass |
+| 9 | look at the dashboard | see nothing a caller said — no name, no number, no recording | `metrics.test.js` + `ui.test.mjs` | pass |
+| — | have taken no calls yet | see dashes, not a crash or a division by zero | `metrics.test.js` | pass |
+| — | leave it running a long time | not have the event log grow without limit | `metrics.test.js` | pass |
 
 ## On a phone
 

@@ -4,7 +4,7 @@ import { createServer } from 'node:http';
 import { readFile } from 'node:fs/promises';
 import { extname, join, normalize as normPath } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { bookings, speak } from './src/handlers.js';
+import { bookings, speak, usage } from './src/handlers.js';
 import { configuredProvider } from './src/tts.js';
 
 const ROOT = fileURLToPath(new URL('.', import.meta.url));
@@ -26,11 +26,10 @@ const readBody = (req) => new Promise((resolve, reject) => {
 export const server = createServer(async (req, res) => {
   const url = new URL(req.url, `http://${req.headers.host || 'localhost'}`);
   try {
-    if (url.pathname === '/api/bookings' || url.pathname === '/api/speak') {
+    const api = { '/api/bookings': bookings, '/api/speak': speak, '/api/usage': usage };
+    if (api[url.pathname]) {
       const body = req.method === 'POST' ? await readBody(req) : null;
-      const out = url.pathname === '/api/bookings'
-        ? bookings(req.method, body)
-        : await speak(req.method, body);
+      const out = await api[url.pathname](req.method, body);
       if (out.mp3) {
         res.writeHead(200, { 'Content-Type': 'audio/mpeg', 'Cache-Control': 'public, max-age=31536000' });
         return res.end(out.mp3);

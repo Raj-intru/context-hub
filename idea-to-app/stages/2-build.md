@@ -27,7 +27,11 @@ Explain each of these in one sentence the first time it comes up, then do it.
 4. **Secrets.** If anything needs a key or password, you tell the learner the
    exact screen to open and what to paste where. They type it. You never see it,
    and it never appears in this chat or in the code.
-5. **What is building this.** Check the **Agent** and **Model** fields in
+5. **Counting what it costs.** If the app spends money per use — a voice, a
+   model, a phone line — the metrics layer goes in with the *first* feature, not
+   at the end. Retrofitting it means guessing at what last month cost. It records
+   what happened and never what was said. See `demo/sme-dashboard.md`.
+6. **What is building this.** Check the **Agent** and **Model** fields in
    `project-docs/progress.md` are filled in. If either changes part-way through
    the build, log it in `decision-log.md` like any other decision and tell the
    learner plainly: it can change the quality of everything after it, and the

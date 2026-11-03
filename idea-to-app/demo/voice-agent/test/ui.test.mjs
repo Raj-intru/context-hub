@@ -115,6 +115,43 @@ test('check 7 — on a phone, the Talk button is reachable without zooming', asy
   await page.close();
 });
 
+test('the dashboard shows what it cost and how it went', async () => {
+  const page = await browser.newPage();
+  await stubSpeech(page, 'silent');
+  await page.goto(base);
+
+  // Three turns: one answered, one it could not answer, one booking.
+  await page.evaluate(async () => {
+    await window.__assistant.send('what time do you open');
+    await window.__assistant.send('do you do roof tiling');
+    await window.__assistant.send('book me in for friday');
+    await window.__assistant.send('Sam');
+    await window.__assistant.send('0412 000 111');
+  });
+
+  await page.goto(`${base}/dashboard.html`);
+  await page.waitForFunction(() => document.getElementById('heroValue').textContent !== '—');
+
+  // The hero is a cost, not a placeholder.
+  assert.match(await page.textContent('#heroValue'), /^\$\d/);
+  // The KPI row names the business outcome and the honest quality number.
+  const kpis = await page.textContent('#kpis');
+  assert.match(kpis, /Bookings taken/);
+  assert.match(kpis, /Took a message/);
+  // The segmented bar drew a segment per kind of ending, with a labelled legend.
+  assert.ok((await page.locator('#stack .seg').count()) >= 3, 'expected at least three segments');
+  assert.match(await page.textContent('#stackLegend'), /Took a booking/);
+  // Identity is never colour alone: every legend row carries its name and count.
+  assert.equal(await page.locator('#stackLegend li .nm').count(), 4);
+  // And the relief rule's table view exists and is populated.
+  assert.ok((await page.locator('#tableView tbody tr').count()) >= 10);
+
+  // The promise the Trust Card makes: the page cannot leak what was said.
+  const body = await page.textContent('body');
+  assert.doesNotMatch(body, /Sam|0412/, 'the dashboard must not show caller details');
+  await page.close();
+});
+
 test('the microphone path itself works when the engine does respond', async () => {
   const page = await browser.newPage();
   await stubSpeech(page, 'heard');

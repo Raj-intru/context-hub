@@ -9,8 +9,8 @@
   },
   "scripts": {
     "start": "node server.js",
-    "test": "node --test test/brain.test.js test/ui.test.mjs",
-    "test:brain": "node --test test/brain.test.js",
+    "test": "node --test test/brain.test.js test/metrics.test.js test/ui.test.mjs",
+    "test:brain": "node --test test/brain.test.js test/metrics.test.js",
     "test:ui": "node --test test/ui.test.mjs",
     "voice": "node scripts/pregen-voice.mjs"
   },

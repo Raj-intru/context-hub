@@ -1,5 +1,31 @@
 # Decision log
 
+### 2026-11-03 — a cost and performance dashboard, by default
+
+- **The choice:** every SME build ships with a dashboard, and the headline is cost
+  per booking rather than total spend.
+- **The options:** no dashboard; or spend figures only; or wait until someone asks.
+- **Why:** five of the six cost lines in a voice agent are usage-based, so a bad
+  week is a bill. "$4.12 this month" means nothing to a sole trader; "1.4 cents a
+  booking against a $90 call-out" is a decision. And because the brain cannot
+  invent an answer, the rate at which it says "I'll take a message" is a real
+  quality number rather than an estimate — worth showing precisely because almost
+  no AI product can show it.
+- **Changes:** the kit's Trust Card template gained a *What it costs to run*
+  section, the acceptance-checks template gained two rows, Stage 2 now builds the
+  metrics in with the first feature, and Stage 4's pre-flight checks the
+  dashboard works and is behind a login.
+
+### 2026-11-03 — the dashboard counts events and never content
+
+- **The choice:** the event log holds an action, a duration, a character count
+  and a cached flag. Nothing else, by construction.
+- **Why:** it is Lyra's "stats, not chats" rule, and it is what makes the
+  dashboard safe to leave on a screen in the shop. A test asserts the exact set of
+  keys and fails if a name or number ever reaches it.
+- **Changes:** none to the spec; the Trust Card now says the dashboard holds
+  nothing anybody said.
+
 ### 2026-11-03 — bookings are held in memory, not written down
 
 - **The choice:** the server keeps bookings in memory for the length of the demo

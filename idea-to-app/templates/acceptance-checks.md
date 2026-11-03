@@ -17,6 +17,15 @@ step is called done. A check that cannot be tested gets rewritten until it can.
 | --- | --- | --- | --- | --- |
 | 2 | [send the form empty] | [see "Please add a date" and stay on the page] | `[test file:name]` | — |
 
+## What it costs and how it is going
+
+Every build that spends money per use gets these, from the start.
+
+| # | When I… | I should… | Test | Status |
+| --- | --- | --- | --- | --- |
+| — | [open the dashboard] | [see what each one cost me, and this month's spend against my cap] | `[test file:name]` | — |
+| — | [look at the dashboard] | [see nothing a customer said — no names, no numbers, no recordings] | `[test file:name]` | — |
+
 ## On a phone
 
 | # | When I… | I should… | Test | Status |

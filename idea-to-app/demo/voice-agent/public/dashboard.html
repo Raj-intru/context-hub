@@ -1,0 +1,144 @@
+<!doctype html>
+<html lang="en-AU">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Running costs — Dave's Plumbing</title>
+<link rel="stylesheet" href="styles.css">
+<style>
+  .viz-root {
+    color-scheme: light;
+    --surface-1: #ffffff;
+    --series-1: #2a78d6;   /* answered */
+    --series-2: #eb6834;   /* took a message */
+    --series-3: #1baf7a;   /* booked */
+    --series-4: #eda100;   /* other */
+    --seq-400: #3987e5;
+    --status-good: #0ca30c;
+    --status-warning: #fab219;
+    --status-critical: #d03b3b;
+    --track: #e2dfd8;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:where(:not([data-theme="light"])) .viz-root {
+      color-scheme: dark;
+      --surface-1: #1f2124;
+      --series-1: #3987e5; --series-2: #d95926; --series-3: #199e70; --series-4: #c98500;
+      --seq-400: #3987e5;
+      --track: #32353a;
+    }
+  }
+  :root[data-theme="dark"] .viz-root {
+    color-scheme: dark;
+    --surface-1: #1f2124;
+    --series-1: #3987e5; --series-2: #d95926; --series-3: #199e70; --series-4: #c98500;
+    --seq-400: #3987e5;
+    --track: #32353a;
+  }
+
+  main { max-width: 48rem; }
+  .panel { background: var(--card); border: 1px solid var(--line); border-radius: .9rem; padding: 1.1rem; margin-bottom: 1rem; }
+  .panel h2 { margin: 0 0 .9rem; }
+
+  .hero { font-size: 3rem; line-height: 1.05; font-weight: 650; letter-spacing: -.02em; margin: 0; font-variant-numeric: tabular-nums; }
+  .hero-label { margin: 0 0 .35rem; font-size: .8rem; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); }
+  .hero-note { margin: .5rem 0 0; color: var(--muted); font-size: .92rem; }
+
+  .kpis { display: grid; grid-template-columns: repeat(auto-fit, minmax(9rem, 1fr)); gap: .6rem; }
+  .kpi { background: var(--card); border: 1px solid var(--line); border-radius: .7rem; padding: .8rem .9rem; }
+  .kpi .v { font-size: 1.55rem; font-weight: 640; font-variant-numeric: tabular-nums; letter-spacing: -.01em; }
+  .kpi .k { font-size: .78rem; text-transform: uppercase; letter-spacing: .05em; color: var(--muted); margin-bottom: .2rem; }
+  .kpi .n { font-size: .8rem; color: var(--muted); margin-top: .15rem; }
+
+  .meter-track { height: .85rem; background: var(--track); border-radius: .45rem; overflow: hidden; }
+  .meter-fill { height: 100%; border-radius: .45rem; min-width: .25rem; transition: width .3s; }
+  .meter-row { display: flex; justify-content: space-between; gap: 1rem; margin-bottom: .5rem; font-variant-numeric: tabular-nums; }
+  .meter-status { display: inline-flex; align-items: center; gap: .35rem; font-size: .85rem; font-weight: 600; }
+  .meter-status .dot { width: .6rem; height: .6rem; border-radius: 50%; }
+
+  .split { display: flex; gap: 1.2rem; align-items: center; }
+  .stack { width: 3.2rem; height: 11rem; display: flex; flex-direction: column; background: var(--track); border-radius: .3rem; overflow: hidden; }
+  .seg { width: 100%; box-shadow: 0 2px 0 0 var(--card); }   /* 2px surface gap between fills */
+  .stack .seg:first-child { border-radius: .25rem .25rem 0 0; }
+  .stack .seg:last-child { border-radius: 0 0 .25rem .25rem; box-shadow: none; }
+  .legend { list-style: none; margin: 0; padding: 0; flex: 1 1 auto; }
+  .legend li { display: flex; align-items: baseline; gap: .5rem; padding: .22rem 0; font-size: .92rem; }
+  .legend .sw { width: .7rem; height: .7rem; border-radius: .2rem; flex: none; transform: translateY(1px); }
+  .legend .nm { flex: 1 1 auto; }
+  .legend .ct { font-variant-numeric: tabular-nums; color: var(--muted); }
+
+  .bars { display: grid; gap: .3rem; }
+  .bar-row { display: grid; grid-template-columns: 5.5rem 1fr 2.5rem; gap: .5rem; align-items: center; font-size: .85rem; }
+  .bar { display: block; height: .7rem; background: var(--seq-400); border-radius: 0 .25rem .25rem 0; min-width: 2px; }
+  .bar-row .ct { text-align: right; font-variant-numeric: tabular-nums; color: var(--muted); }
+
+  table.view { width: 100%; border-collapse: collapse; font-size: .88rem; }
+  table.view th, table.view td { text-align: left; padding: .35rem .5rem; border-bottom: 1px solid var(--line); }
+  table.view td:last-child, table.view th:last-child { text-align: right; font-variant-numeric: tabular-nums; }
+  details.table-view summary { cursor: pointer; color: var(--muted); font-size: .88rem; }
+  .caveat { color: var(--muted); font-size: .85rem; line-height: 1.5; }
+  .caveat strong { color: var(--ink); }
+  .empty { color: var(--muted); }
+</style>
+</head>
+<body class="viz-root">
+<main>
+  <header>
+    <h1>Running costs</h1>
+    <p class="sub">Dave's Plumbing assistant · <a href="/">back to the assistant</a></p>
+  </header>
+
+  <section class="panel">
+    <p class="hero-label" id="heroLabel">What each booking cost to take</p>
+    <p class="hero" id="heroValue">—</p>
+    <p class="hero-note" id="heroNote">No bookings yet. Take one on the assistant and this fills in.</p>
+  </section>
+
+  <section class="kpis" id="kpis" aria-label="Headline numbers"></section>
+
+  <section class="panel" style="margin-top:1rem">
+    <h2>Spend against your cap</h2>
+    <div class="meter-row">
+      <span id="meterSpent">$0.00</span>
+      <span id="meterCap" class="caveat">cap $20.00</span>
+    </div>
+    <div class="meter-track" role="img" aria-labelledby="meterStatus">
+      <div class="meter-fill" id="meterFill" style="width:0"></div>
+    </div>
+    <p class="meter-status" id="meterStatus" style="margin:.55rem 0 0"></p>
+  </section>
+
+  <section class="panel">
+    <h2>How calls ended</h2>
+    <div class="split">
+      <div class="stack" id="stack" role="img" aria-labelledby="stackLegend"></div>
+      <ul class="legend" id="stackLegend"></ul>
+    </div>
+  </section>
+
+  <section class="panel">
+    <h2>How long callers waited for a reply</h2>
+    <div id="latency"></div>
+  </section>
+
+  <section class="panel">
+    <details class="table-view">
+      <summary>See all the numbers as a table</summary>
+      <table class="view" id="tableView"><tbody></tbody></table>
+    </details>
+  </section>
+
+  <p class="caveat">
+    <strong>Stats, not chats.</strong> This page counts what happened. It holds no
+    transcript, no name, no phone number and no audio — there is no code path that
+    could reach them.<br><br>
+    <strong>Costs are estimates</strong> from a rate table in <code>src/costs.js</code>,
+    last checked November 2026. The real figure is your provider's invoice; check
+    their pricing page before you quote anyone.<br><br>
+    <strong>This page has no password.</strong> That is fine for a demo and wrong
+    for a business — putting it behind a login is the first thing to add.
+  </p>
+</main>
+<script type="module" src="dashboard.js"></script>
+</body>
+</html>

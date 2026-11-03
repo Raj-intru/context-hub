@@ -31,6 +31,17 @@ Written for the people who use this app. No jargon.
 - A data review on [date]: we removed [what was removed] because we could not
   say why we needed it.
 
+## What it costs to run
+
+Filled in from the app's own dashboard, not from a guess.
+
+| | |
+| --- | --- |
+| What each [booking / enquiry / ticket] costs | [amount] |
+| What one is worth to the business | [amount] |
+| Spend this month, against the cap | [amount] of [cap] |
+| Where these figures come from | [a rate table — an estimate — or the provider's own usage API] |
+
 ## What we know is missing
 
 Honesty here is the point of the card.

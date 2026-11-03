@@ -45,6 +45,18 @@ saved. If that changes, this card changes with it.
 - Data review on 2026-11-03: the audio is not kept, and voice identification was
   ruled out in the spec rather than left undecided.
 
+## What it costs to run
+
+| | |
+| --- | --- |
+| What each booking costs to take | About 1.5 cents, if a paid voice is speaking. Nothing at all on the browser's own voice |
+| What one booking is worth | $90, one call-out |
+| Spend this month, against the cap | $0.00 of $20.00 |
+| Where these figures come from | A rate table in `src/costs.js`, last checked November 2026. **An estimate** — the real figure is the provider's invoice |
+
+You can see this yourself at `/dashboard.html`. It counts what happened and holds
+nothing anybody said.
+
 ## What we know is missing
 
 - **It is not a phone number.** Today you have to open a link. Ringing a real
@@ -54,6 +66,11 @@ saved. If that changes, this card changes with it.
   version needs a database, a backup, and a tested restore. First thing to build.
 - **Nobody is notified.** Dave has to look at the page. An SMS or email on each
   booking is version 2.
+- **The dashboard has no password.** Anyone with the link can see how the
+  business is going. It shows no customer details, but it should still be behind
+  a login before real use.
+- **The spending cap is a label, not a brake.** It will tell you that you are over
+  it. It will not stop you going over it.
 - **It understands Australian English, said clearly.** Heavy background noise or
   a strong accent will defeat the browser's listening.
 

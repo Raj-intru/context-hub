@@ -1,6 +1,7 @@
 // The request logic, with no server in it — so both the local server and the
 // Vercel function are thin wrappers, and the tests drive the same code.
 import * as store from './store.js';
+import * as metrics from './metrics.js';
 import { synthesize, configuredProvider } from './tts.js';
 
 const spoken = new Map();   // text -> mp3 Buffer, per instance
@@ -21,6 +22,16 @@ export function bookings(method, body) {
     takenAt: new Date().toISOString(),
   };
   return { status: 201, json: store.add(row) };
+}
+
+// The page reports one content-free line per turn: what happened, how long the
+// caller waited, how many characters were spoken. Never what was said.
+export function usage(method, body) {
+  if (method === 'GET') {
+    return { status: 200, json: metrics.summary({ provider: configuredProvider() || 'browser' }) };
+  }
+  if (method !== 'POST') return { status: 405, json: { error: 'method not allowed' } };
+  return { status: 201, json: metrics.record(body || {}) };
 }
 
 export async function speak(method, body) {

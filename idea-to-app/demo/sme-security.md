@@ -135,6 +135,19 @@ alongside the APP 5.1 notice obligation, and rejected the argument that a genera
 exception applied. That was a large retailer with lawyers. The lesson for a
 five-person business is to not need the argument.
 
+## 4a. Knowing what it costs, while it runs
+
+Every SME build ships with a cost and performance dashboard — not as an extra,
+as a default. Three questions, answered without ringing anyone: what is this
+costing me, is it working, and when does it embarrass me. The headline is cost
+per outcome rather than spend, because "each booking cost 1.4 cents against a $90
+call-out" is a decision and "$4.12 this month" is not.
+
+It follows the same rule as everything else here: **stats, not chats**. It counts
+events and holds no transcript, name, number or audio, which is what makes it
+safe to leave on a screen in the shop. Design, metric list and the four gaps a
+real business has to close are in `sme-dashboard.md`.
+
 ## 5. What the SME actually walks away with
 
 Not an app. Three documents the kit already produces, plus one more:
@@ -145,7 +158,9 @@ Not an app. Three documents the kit already produces, plus one more:
    read, each backed by a test that runs.
 3. **`trust-card.md`** — the customer-facing page: what it does, what it keeps,
    what was checked, **what is known to be missing**, who to contact.
-4. **`SECURITY.md`** — new for the business version, written in Lyra's style:
+4. **The dashboard** — what it costs per outcome, what it achieved, and how
+   often it hit the edge of what it knows. See `sme-dashboard.md`.
+5. **`SECURITY.md`** — new for the business version, written in Lyra's style:
    what is enforced, what is not yet, and what would have to be true before any
    claim gets made.
 

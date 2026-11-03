@@ -25,6 +25,9 @@ with an unanswered row.
 | The app does nothing that costs money without a yes | Name every paid service and its price |
 | Someone can get their data deleted | The learner performs the step once |
 | The Trust Card matches what the app really does | Read it together |
+| The cost and performance dashboard works | Open it; the numbers match what you just did |
+| The dashboard is behind a login | Open it in a private window — you should not get in |
+| The Trust Card's running costs are filled in | From the dashboard, not from a guess |
 
 ## Part B — going live
 

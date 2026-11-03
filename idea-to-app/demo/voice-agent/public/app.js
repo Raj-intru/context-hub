@@ -37,7 +37,7 @@ function playUrl(url) {
 
 async function say(text) {
   el.said.textContent = text;
-  if (voices[text]) return playUrl(voices[text]);          // pre-generated: instant, offline
+  if (voices[text]) { await playUrl(voices[text]); return { cached: true }; }   // pre-generated: instant, offline
   try {
     const res = await fetch('api/speak', {
       method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ text }),
@@ -47,7 +47,7 @@ async function say(text) {
       const url = URL.createObjectURL(blob);
       await playUrl(url);
       URL.revokeObjectURL(url);
-      return;
+      return { cached: false };
     }
   } catch { /* fall through to the browser voice */ }
   if (window.speechSynthesis) {
@@ -55,17 +55,27 @@ async function say(text) {
     u.lang = 'en-AU';
     window.speechSynthesis.speak(u);
   }
+  return { cached: true };   // the browser's own voice costs nothing
 }
 
 // ---------- the conversation ----------
 
 async function send(text) {
+  const startedAt = performance.now();
   el.heard.textContent = text;
   const out = reply(state, text, business);
   state = out.state;
   if (out.booking) await saveBooking(out.booking);
-  await say(out.say);
+  const spoken = await say(out.say);
+  report(out, out.say.length, spoken, performance.now() - startedAt);
   return out;
+}
+
+// One content-free line per turn: what happened, how long, how many characters.
+// Never what was said — see src/metrics.js.
+function report(out, spokenCharacters, spoken, replyMs) {
+  const body = JSON.stringify({ action: out.action, spokenCharacters, cached: !!(spoken && spoken.cached), replyMs });
+  fetch('api/usage', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body }).catch(() => {});
 }
 
 async function saveBooking(booking) {

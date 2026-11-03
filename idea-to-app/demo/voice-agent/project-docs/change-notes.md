@@ -1,5 +1,18 @@
 # Change notes
 
+### 2026-11-03 — added the running-costs dashboard
+
+- **Why:** an SME running a voice agent is spending money per call and has no way
+  to see it. Standard on SME builds from now on.
+- **How to check it:** take a booking on the assistant, then open
+  `/dashboard.html`. You should see the booking counted, what it cost, and how
+  long you waited for a reply — and nothing you said.
+- **Tests:** 11 added, 26 of 26 passing.
+- **Found by rendering it:** the latency bars did not draw at all — they were
+  `<span>`s, which ignore width and height. Four numbers on screen said one thing
+  and the picture said nothing. A validator cannot catch that; opening the page
+  can.
+
 ### 2026-11-03 — made it work on serverless hosting
 
 - **Why:** the Stage 4 pre-flight caught that Vercel has no disk that survives a

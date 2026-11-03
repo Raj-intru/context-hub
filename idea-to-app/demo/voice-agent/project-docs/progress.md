@@ -10,7 +10,8 @@ real learner's signatures, and a real run starts this file again from scratch.
 
 ## Where we are
 
-**Current stage:** 4 — pre-flight done and clean; the deploy itself is blocked
+**Current stage:** 4 — pre-flight done and clean; the deploy itself is blocked.
+26 of 26 checks passing, dashboard included
 **Next step:** run the three commands in `DEPLOY.md`, then record the gate here
 **Waiting on:** the presenter — the Vercel connector in the agent's session can
 read the account but not create a project (403), and the eight projects it can

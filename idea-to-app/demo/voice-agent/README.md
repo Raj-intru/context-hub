@@ -56,6 +56,9 @@ read-back plays from disk.
 | `src/brain.js` | Text in, reply out. No audio, no browser, no network, no model |
 | `src/business.js` | The three answers — the only file a learner edits to make it theirs |
 | `src/tts.js` | One function per voice provider |
+| `src/metrics.js` | What happened, never what was said. Content-free, in memory |
+| `src/costs.js` | The rate table, and what a turn and a booking cost |
+| `public/dashboard.html` | Running costs and performance, at `/dashboard.html` |
 | `public/app.js` | The microphone half: speech in, audio out, nothing decided here |
 | `server.js` | Serves the page, keeps the bookings, synthesises on a cache miss |
 | `test/brain.test.js` | Checks 1-4 and the ways people get it wrong. No browser |
@@ -68,6 +71,24 @@ tested as a pure function, and one browser test feeds it a fake transcript.
 **No language model decides what it says.** Acceptance check 2 promises it never
 invents an answer, and that is only a promise you can keep if it cannot. See
 `project-docs/decision-log.md`.
+
+## What it costs, while it runs
+
+Open `/dashboard.html` next to the assistant. It leads with the number an SME
+actually decides on — what each booking cost against what a call-out is worth —
+then spend against a cap, how calls ended, and how long callers waited.
+
+Two things to know. It is **stats, not chats**: it counts events and holds no
+transcript, name, number or audio, and `test/metrics.test.js` fails if that ever
+changes. And every cost on it is an **estimate** from the rate table in
+`src/costs.js`; the real figure is the provider's invoice.
+
+On the free browser voice everything would read $0, which looks broken rather
+than free — so the page prices it as though a paid voice spoke every line, and
+says that is what it is doing.
+
+The page has **no password**, which is fine here and wrong for a business. See
+`../sme-dashboard.md` for that and the three other gaps.
 
 ## What it is not
 
