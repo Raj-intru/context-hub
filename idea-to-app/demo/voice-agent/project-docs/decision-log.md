@@ -1,5 +1,18 @@
 # Decision log
 
+### 2026-11-03 — bookings are held in memory, not written down
+
+- **The choice:** the server keeps bookings in memory for the length of the demo
+  and never writes them anywhere.
+- **The options:** a file (what it did before), or a hosted database.
+- **Why:** two reasons, and the second is the better one. Vercel's functions have
+  no disk that survives a request, so the file would have failed silently. And a
+  public demo link that permanently keeps every passer-by's name and phone number
+  is a privacy liability nobody asked for — the SME security notes warn about
+  exactly this. A demo should not be a database of strangers.
+- **Changes:** `spec.md` data section still holds; the Trust Card now says
+  nothing is written down. A real business swaps `src/store.js` and nothing else.
+
 ### 2026-11-03 — no language model in the brain
 
 - **The choice:** the assistant matches keywords and falls through to "I'll take

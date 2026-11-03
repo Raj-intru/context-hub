@@ -1,5 +1,14 @@
 # Change notes
 
+### 2026-11-03 — made it work on serverless hosting
+
+- **Why:** the Stage 4 pre-flight caught that Vercel has no disk that survives a
+  request, so writing bookings to a file would have lost them without saying so.
+- **How to check it:** make a booking; it appears on the list. Reload the page
+  after a few minutes and it is gone — which is now the stated behaviour, not a
+  bug.
+- **Tests:** none added; 15 of 15 still passing against the new structure.
+
 ### 2026-11-03 — read the phone number back the way an Australian says it
 
 - **Why:** reading ten digits in pairs is unfollowable out loud.

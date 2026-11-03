@@ -10,9 +10,11 @@ real learner's signatures, and a real run starts this file again from scratch.
 
 ## Where we are
 
-**Current stage:** 3 complete — Trust Card signed, 15 of 15 checks passing
-**Next step:** the presenter runs Stage 4 on their own hosting account
-**Waiting on:** the presenter
+**Current stage:** 4 — pre-flight done and clean; the deploy itself is blocked
+**Next step:** run the three commands in `DEPLOY.md`, then record the gate here
+**Waiting on:** the presenter — the Vercel connector in the agent's session can
+read the account but not create a project (403), and the eight projects it can
+see are real apps, so nothing was deployed into them
 
 ## Gates signed
 
@@ -32,4 +34,6 @@ real learner's signatures, and a real run starts this file again from scratch.
   runs green in 1.8 seconds.
 - Stage 4 deliberately not run: deploying needs the presenter's own hosting
   account, and `AGENTS.md` rule 4 says the learner types their own credentials.
+- Stage 4 pre-flight run and clean; app restructured for serverless and
+  re-tested; `DEPLOY.md` written with the exact commands.
 - **Next session:** type `/start`
