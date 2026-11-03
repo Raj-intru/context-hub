@@ -1,0 +1,44 @@
+<!doctype html>
+<html lang="en-AU">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Dave's Plumbing</title>
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+<main>
+  <header>
+    <h1>Dave's Plumbing</h1>
+    <p class="sub">Dave's on the tools. Ask me instead.</p>
+  </header>
+
+  <section class="talk">
+    <button id="talk" class="talk-btn" aria-describedby="hint">
+      <span aria-hidden="true">🎤</span> Hold to talk
+    </button>
+    <p id="hint" class="hint">Hold the button, say your question, let go.</p>
+    <p id="status" class="status" role="status" aria-live="polite"></p>
+  </section>
+
+  <section id="typed" class="typed" hidden>
+    <label for="typedInput">Microphone not available — type your question instead</label>
+    <form id="typedForm">
+      <input id="typedInput" name="q" type="text" autocomplete="off" placeholder="What time do you open?">
+      <button type="submit">Ask</button>
+    </form>
+  </section>
+
+  <section class="log" aria-label="Conversation">
+    <p class="you"><span class="label">You said</span> <span id="heard">—</span></p>
+    <p class="me" aria-live="polite"><span class="label">Assistant</span> <span id="said">—</span></p>
+  </section>
+
+  <section class="bookings">
+    <h2>Bookings taken</h2>
+    <ul id="bookings"><li class="empty">None yet.</li></ul>
+  </section>
+</main>
+<script type="module" src="app.js"></script>
+</body>
+</html>

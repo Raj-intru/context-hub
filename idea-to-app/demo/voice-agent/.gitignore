@@ -1,0 +1,7 @@
+data/
+public/voice/
+.env
+node_modules/
+
+# the repo root ignores .env.* — this one is a template with no secrets in it
+!.env.example

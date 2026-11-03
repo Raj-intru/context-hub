@@ -36,9 +36,28 @@ If the live build stalls, you say "here's one I built earlier", check out the
 branch, and carry on. Nobody minds. A presenter waiting silently for an agent is
 the only real failure.
 
+**A finished build already exists** at `demo/voice-agent/`, on the
+`demo-fallback` branch of this repository. It passes 15 checks in about two
+seconds. Copy it into your demo folder and you have a fallback before you have
+rehearsed anything:
+
+```
+cp -r idea-to-app/demo/voice-agent ~/voice-demo-fallback
+cd ~/voice-demo-fallback && npm start
+```
+
+Rehearsing is still worth the half hour, because the number you actually need —
+how long *your* agent takes to build this conversationally, on *your* machine —
+is the one thing nobody can hand you.
+
 **4. Check these on the actual demo machine, not your usual one.**
 
 - [ ] Chrome or Edge — the browser speech engine is weakest in Safari and Firefox
+- [ ] If you want a real voice rather than the browser's: `npm run voice` once,
+      with your key in `.env`. About 900 characters, a fraction of a cent, and it
+      plays from disk afterwards so nothing is called from the stage
+- [ ] Rehearse with the **same fake name** you will use live — the read-back line
+      has a name in it, so it can only be cached by having been said once
 - [ ] Microphone works, and the browser has permission
 - [ ] **Speaker volume up, and notifications off** — the app talks out loud
 - [ ] Terminal font at presentation size; agent open in `~/voice-demo`

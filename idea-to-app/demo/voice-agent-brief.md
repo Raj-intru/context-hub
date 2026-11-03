@@ -66,11 +66,20 @@ this split, "we have tests" is theatre — you can only test by talking to it.
 
 ## What to say when someone asks "is that a real voice agent?"
 
-Be straight about it. The browser's speech engine is doing the listening and the
-speaking, which is why it needs no keys. It is a real voice interface and a real
-intent layer; it is not a phone line and not a large speech model. The production
-path is in `sme-security.md` — a telephony layer for real calls, a hosted speech
-model for better recognition, and the same brain in the middle, untouched.
+Be straight about it. The browser's own engine does the **listening**, which is
+why no key is needed for it. The **speaking** is a real hosted voice — Cartesia by
+default — generated ahead of time into files so the demo plays from disk. It is a
+real voice interface and a real intent layer; it is not a phone line, and the
+listening is not a large speech model. The production path is in
+`sme-security.md`: telephony for real calls, a hosted speech-to-text model for
+better recognition in a noisy kitchen, and the same brain in the middle,
+untouched.
+
+Say the second half too, because somebody is going to ask: **there is no language
+model deciding what it says.** It matches what it heard against a handful of
+things it knows, and anything else becomes a message. That is not a shortcut —
+it is the only way acceptance check 2, "never invent an answer", is a promise
+rather than a hope.
 
 That answer is also the demo's best moment, because it shows the method working:
 the thing that changes is the plumbing, and the thing that does not change is the
