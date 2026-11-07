@@ -8,6 +8,7 @@ const SILENCE_MS = Number(params.get('silence') || 5000);
 
 const el = {
   talk: document.getElementById('talk'),
+  typeInstead: document.getElementById('typeInstead'),
   status: document.getElementById('status'),
   heard: document.getElementById('heard'),
   said: document.getElementById('said'),
@@ -22,6 +23,8 @@ let voices = {};          // exact line -> cached mp3 path
 let recognition = null;
 let silenceTimer = null;
 let listening = false;
+let gotResult = false;
+let sawError = false;
 
 // ---------- speaking ----------
 
@@ -104,15 +107,33 @@ function speechSupport() {
   return window.SpeechRecognition || window.webkitSpeechRecognition || null;
 }
 
-function useTypedInput(why) {
+function useTypedInput(why, { disableTalk = true } = {}) {
   el.typed.hidden = false;
-  el.talk.disabled = true;
-  el.status.textContent = why;
+  if (disableTalk) el.talk.disabled = true;
+  if (why) el.status.textContent = why;
+  el.typedInput.focus();
+}
+
+// The microphone can fail silently: Chrome sends audio to a speech service, and
+// when nothing comes back it ends the session without a result and without an
+// error. Before this, that cleared the status line and the page looked dead.
+// Never let a press produce no feedback.
+let heardNothingInARow = 0;
+
+function noTranscript(lead) {
+  heardNothingInARow += 1;
+  if (heardNothingInARow >= 2) {
+    return useTypedInput("Still not hearing you. Type it instead — this works exactly the same.", { disableTalk: false });
+  }
+  el.status.textContent = lead
+    || "I didn't catch anything. Hold the button down, speak, then let go — or type it instead.";
 }
 
 function startListening() {
   if (listening || !recognition) return;
   listening = true;
+  gotResult = false;
+  sawError = false;
   el.talk.dataset.listening = 'true';
   el.status.textContent = 'Listening…';
   try { recognition.start(); } catch { /* already running */ }
@@ -120,7 +141,7 @@ function startListening() {
   // Check 6: never sit there listening forever.
   silenceTimer = setTimeout(() => {
     stopListening();
-    el.status.textContent = "I didn't hear anything, so I stopped listening. Hold the button and try again.";
+    noTranscript('I stopped listening because I didn\'t hear anything. Hold the button and try again — or type it instead.');
   }, SILENCE_MS);
 }
 
@@ -145,18 +166,29 @@ function wireSpeech() {
   recognition.onresult = (event) => {
     clearTimeout(silenceTimer);
     const text = event.results?.[0]?.[0]?.transcript || '';
+    gotResult = Boolean(text.trim());
     stopListening();
-    if (text.trim()) send(text);
+    if (gotResult) { heardNothingInARow = 0; send(text); }
   };
   recognition.onerror = (event) => {
+    sawError = true;
     stopListening();
+    if (event?.error === 'no-speech') return noTranscript();
+    if (event?.error === 'network') {
+      return useTypedInput("The speech service can't be reached, so type it instead.", { disableTalk: false });
+    }
     // Check 5: a refused microphone must not leave a dead page.
     if (event?.error === 'not-allowed' || event?.error === 'service-not-allowed') {
       return useTypedInput('No microphone permission, so type your question instead.');
     }
     el.status.textContent = 'I had trouble hearing that. Hold the button and try again.';
   };
-  recognition.onend = () => stopListening();
+  recognition.onend = () => {
+    const wasListening = listening;
+    stopListening();
+    // Ended with nothing to show for it. Say so rather than going quiet.
+    if (wasListening && !gotResult && !sawError) noTranscript();
+  };
 
   el.talk.addEventListener('pointerdown', startListening);
   el.talk.addEventListener('pointerup', stopListening);
@@ -165,6 +197,8 @@ function wireSpeech() {
   el.talk.addEventListener('keydown', (e) => { if (e.key === ' ' || e.key === 'Enter') { e.preventDefault(); startListening(); } });
   el.talk.addEventListener('keyup', (e) => { if (e.key === ' ' || e.key === 'Enter') stopListening(); });
 }
+
+el.typeInstead.addEventListener('click', () => useTypedInput('', { disableTalk: false }));
 
 el.typedForm.addEventListener('submit', (e) => {
   e.preventDefault();
@@ -178,4 +212,4 @@ wireSpeech();
 loadBookings();
 
 // The seam the browser test drives, so it never needs a real microphone.
-window.__assistant = { send, say, get state() { return state; }, startListening, stopListening };
+window.__assistant = { send, say, get state() { return state; }, startListening, stopListening, useTypedInput };

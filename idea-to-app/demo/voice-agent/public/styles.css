@@ -33,6 +33,8 @@ h2 { font-size: 1rem; margin: 0 0 .6rem; color: var(--muted); font-weight: 600; 
 .talk-btn:active, .talk-btn[data-listening="true"] { filter: brightness(1.15); }
 .talk-btn[data-listening="true"]::after { content: " · listening"; font-weight: 400; }
 .talk-btn:focus-visible { outline: 3px solid var(--you); outline-offset: 3px; }
+.linkish { font: inherit; background: none; border: 0; padding: 0; color: var(--you); text-decoration: underline; cursor: pointer; }
+.linkish:focus-visible { outline: 2px solid var(--you); outline-offset: 2px; }
 .hint, .status { color: var(--muted); font-size: .9rem; margin: .6rem 0 0; min-height: 1.4em; }
 .typed { margin-top: 1.5rem; padding: 1rem; background: var(--card); border: 1px solid var(--line); border-radius: .9rem; }
 .typed label { display: block; font-size: .9rem; color: var(--muted); margin-bottom: .5rem; }

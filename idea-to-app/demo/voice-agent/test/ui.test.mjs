@@ -22,6 +22,7 @@ const stubSpeech = (page, mode) => page.addInitScript((m) => {
     start() {
       if (m === 'denied') setTimeout(() => this.onerror && this.onerror({ error: 'not-allowed' }), 0);
       if (m === 'heard') setTimeout(() => this.onresult && this.onresult({ results: [[{ transcript: 'what time do you open' }]] }), 10);
+      if (m === 'deaf') setTimeout(() => this.onend && this.onend(), 20);   // started, heard nothing, ended
       // m === 'silent': never calls back, which is the point of check 6.
     }
     stop() { if (this.onend) this.onend(); }
@@ -95,6 +96,49 @@ test('check 6 — five seconds of silence stops it listening instead of hanging'
 
   await page.waitForFunction(() => document.getElementById('status').textContent.includes('stopped listening'), null, { timeout: 4000 });
   assert.equal(await page.getAttribute('#talk', 'data-listening'), 'false');
+  await page.close();
+});
+
+test('check 5b — a press that hears nothing says so, and never goes quiet', async () => {
+  // The bug this covers: Chrome ends a recognition session with no result and no
+  // error when the speech service returns nothing. The page used to clear its
+  // status line and look dead, which is indistinguishable from broken.
+  const page = await browser.newPage();
+  await stubSpeech(page, 'deaf');
+  await page.goto(base);
+
+  const press = async () => {
+    const box = await page.locator('#talk').boundingBox();
+    await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2);
+    await page.mouse.down();
+    await page.waitForTimeout(80);
+    await page.mouse.up();
+    await page.waitForTimeout(120);
+  };
+
+  await press();
+  assert.match(await page.textContent('#status'), /didn't catch anything/i,
+    'a press that hears nothing must say so');
+
+  await press();
+  await page.waitForSelector('#typed:not([hidden])');
+  assert.equal(await page.locator('#talk').isDisabled(), false,
+    'the microphone stays available — typing is offered, not forced');
+  await page.close();
+});
+
+test('typing is offered from the start, not only after a failure', async () => {
+  const page = await browser.newPage();
+  await stubSpeech(page, 'silent');
+  await page.goto(base);
+
+  assert.equal(await page.locator('#typeInstead').isVisible(), true);
+  await page.click('#typeInstead');
+  await page.waitForSelector('#typed:not([hidden])');
+
+  await page.fill('#typedInput', 'where are you');
+  await page.click('#typedForm button');
+  await page.waitForFunction(() => document.getElementById('said').textContent.includes('Parramatta'));
   await page.close();
 });
 
