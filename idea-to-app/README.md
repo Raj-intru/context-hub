@@ -71,6 +71,7 @@ of everything that comes after it.
 | `project-docs/` | Created as you go: your progress, spec, decisions, checks, Trust Card |
 | `.claude/` | Claude Code commands and safety settings |
 | `demo/` | How to run the method as a live demo, the worked example it builds, and the security track for taking it to a business |
+| `modules/` | Further teaching modules. `agentic-pm/` covers running a product team's cycle with agents — a different audience from this kit, and the same idea underneath |
 
 ## Your project trail
 
